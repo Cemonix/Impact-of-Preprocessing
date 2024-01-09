@@ -47,7 +47,7 @@ def histogram_equalization_grayscale(image: npt.NDArray) -> npt.NDArray:
 import plotly.graph_objects as go
 from plotly.subplots import make_subplots
 
-def visualize_histograms(original_image: npt.NDArray, transformed_image: npt.NDArray) -> None:
+def visualize_he_histograms(original_image: npt.NDArray, transformed_image: npt.NDArray) -> None:
     """
     Visualize the histograms of the original and transformed images using Plotly.
 
@@ -112,10 +112,10 @@ def visualize_histograms(original_image: npt.NDArray, transformed_image: npt.NDA
     fig.show()
 
 if __name__ == '__main__':
-    image = load_image_as_grayscale('Preprocessing/ClassicMethods/Test_image.jpg')
+    image = load_image_as_grayscale('ChestImages/JPCNN001.jpg')
     equalized_image = histogram_equalization_grayscale(image)
 
-    visualize_histograms(image, equalized_image)
+    visualize_he_histograms(image, equalized_image)
 
     transformed_image = Image.fromarray(equalized_image)
     transformed_image.show()
