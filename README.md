@@ -16,3 +16,8 @@
         <li>zhodnocení výsledků</li>
     </ol>
 </ul>
+
+Spuštění tensorboard
+```
+tensorboard --logdir=./lightning_logs/
+```

@@ -2,7 +2,7 @@ import torch
 import torch.nn as nn
 from pytorch_lightning import LightningModule
 
-from double_conv import DoubleConv
+from UNet.Network.double_conv import DoubleConv
 
 class UNet(LightningModule):
     def __init__(self, n_channels: int, n_classes: int) -> None:
@@ -12,7 +12,7 @@ class UNet(LightningModule):
 
         base = 64
         multiplier = 2
-        layers = [base * multiplier ** i for i in range(5)]  # [64, 128, 256, 512, 1024]
+        layers = [base * multiplier ** i for i in range(5)] # [64, 128, 256, 512, 1024]
 
         # Downsampling layers
         self.downs = nn.ModuleList(
@@ -32,7 +32,7 @@ class UNet(LightningModule):
         )
         self.up_convs = nn.ModuleList(
             [
-                DoubleConv(layers[i] * 2, layers[i - 1])
+                DoubleConv(layers[i], layers[i - 1])
                 for i in range(len(layers) - 1, 0, -1)
             ]
         )
@@ -43,10 +43,14 @@ class UNet(LightningModule):
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         # Downsampling
         skip_connections = []
-        for down in self.downs:
+        for down in self.downs[:-1]:
             x = down(x)
             skip_connections.append(x)
             x = self.pool(x)
+        
+        # Apply the last downs layer (the bridge)
+        x = self.downs[-1](x)
+        skip_connections.append(x)
 
         # Upsampling
         skip_connections = skip_connections[::-1]  # Reverse for correct concatenation order
