@@ -16,7 +16,7 @@ class UNetModel(pl.LightningModule):
         self.model = UNet(n_channels, n_classes)
         self.learning_rate = learning_rate
         self.metrics = metrics or MetricCollection(
-            {'jaccard_index': JaccardIndex(num_classes=n_classes)}
+            {'jaccard_index': JaccardIndex(task="binary", num_classes=n_classes)}
         )
 
     def configure_optimizers(self) -> Optimizer:
@@ -25,22 +25,23 @@ class UNetModel(pl.LightningModule):
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         return self.model(x)
 
-    def training_step(self, batch, batch_idx) -> torch.Tensor:
+    def training_step(self, batch: list[torch.Tensor], batch_idx: int) -> torch.Tensor:
         images, masks = batch
         predictions = self(images)
         loss = F.binary_cross_entropy_with_logits(predictions, masks)
         self.log('train_loss', loss, on_step=True, prog_bar=True, logger=True)
         return loss
 
-    def validation_step(self, batch, batch_idx) -> None:
+    def validation_step(self, batch: list[torch.Tensor], batch_idx: int) -> None:
         images, masks = batch
         predictions = self(images)
         loss = F.binary_cross_entropy_with_logits(predictions, masks)
         self.log('val_loss', loss, on_epoch=True, prog_bar=True, logger=True)
 
-        self.metrics.update(torch.sigmoid(predictions), masks)
+        binary_masks = (masks > 0).float()
+        self.metrics.update(torch.sigmoid(predictions), binary_masks)
 
-    def validation_epoch_end(self, outputs):
+    def on_validation_epoch_end(self):
         # Log validation metrics
         metrics = self.metrics.compute()
         for name, value in metrics.items():
