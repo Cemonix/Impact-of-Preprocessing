@@ -21,3 +21,6 @@ Spuštění tensorboard
 ```
 tensorboard --logdir=./lightning_logs/
 ```
+
+## Zdroje
+https://www.kaggle.com/datasets/nikhilpandey360/chest-xray-masks-and-labels - hlavní datová sada

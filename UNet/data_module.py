@@ -8,13 +8,14 @@ from UNet.lung_dataset import LungSegmentationDataset
 
 class LungSegmentationDataModule(LightningDataModule):
     def __init__(
-        self, image_dir: str, mask_dir: str, batch_size: int = 4,
+        self, image_dir: str, mask_dir: str, batch_size: int = 4, num_of_workers: int = 8,
         train_ratio: float = 0.8, transform: Optional[transforms.Compose] = None
     ) -> None:
         super().__init__()
         self.image_dir = image_dir
         self.mask_dir = mask_dir
         self.batch_size = batch_size
+        self.num_of_workers = num_of_workers
         self.train_ratio = train_ratio
         self.transform = transform
 
@@ -54,10 +55,16 @@ class LungSegmentationDataModule(LightningDataModule):
             pass
 
     def train_dataloader(self) -> DataLoader:
-        return DataLoader(self.train, batch_size=self.batch_size, shuffle=True)
+        return DataLoader(
+            self.train, batch_size=self.batch_size, num_workers=self.num_of_workers, shuffle=True
+        )
 
     def val_dataloader(self) -> DataLoader:
-        return DataLoader(self.val, batch_size=self.batch_size)
+        return DataLoader(
+            self.val, batch_size=self.batch_size, num_workers=self.num_of_workers
+        )
 
     def test_dataloader(self) -> DataLoader:
-        return DataLoader(self.test, batch_size=self.batch_size)
+        return DataLoader(
+            self.test, batch_size=self.batch_size, num_workers=self.num_of_workers
+        )
