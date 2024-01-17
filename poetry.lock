@@ -2,13 +2,13 @@
 
 [[package]]
 name = "absl-py"
-version = "2.0.0"
+version = "2.1.0"
 description = "Abseil Python Common Libraries, see https://github.com/abseil/abseil-py."
 optional = false
 python-versions = ">=3.7"
 files = [
-    {file = "absl-py-2.0.0.tar.gz", hash = "sha256:d9690211c5fcfefcdd1a45470ac2b5c5acd45241c3af71eed96bc5441746c0d5"},
-    {file = "absl_py-2.0.0-py3-none-any.whl", hash = "sha256:9a28abb62774ae4e8edbe2dd4c49ffcd45a6a848952a5eccc6a49f3f0fc1e2f3"},
+    {file = "absl-py-2.1.0.tar.gz", hash = "sha256:7820790efbb316739cde8b4e19357243fc3608a152024288513dd968d7d959ff"},
+    {file = "absl_py-2.1.0-py3-none-any.whl", hash = "sha256:526a04eadab8b4ee719ce68f204172ead1027549089702d99b9059f129ff1308"},
 ]
 
 [[package]]
@@ -98,7 +98,6 @@ files = [
 
 [package.dependencies]
 aiosignal = ">=1.1.2"
-async-timeout = {version = ">=4.0,<5.0", markers = "python_version < \"3.11\""}
 attrs = ">=17.3.0"
 frozenlist = ">=1.1.1"
 multidict = ">=4.5,<7.0"
@@ -120,17 +119,6 @@ files = [
 
 [package.dependencies]
 frozenlist = ">=1.1.0"
-
-[[package]]
-name = "async-timeout"
-version = "4.0.3"
-description = "Timeout context manager for asyncio programs"
-optional = false
-python-versions = ">=3.7"
-files = [
-    {file = "async-timeout-4.0.3.tar.gz", hash = "sha256:4640d96be84d82d02ed59ea2b7105a0f7b33abe8703703cd0ab0bf87c427522f"},
-    {file = "async_timeout-4.0.3-py3-none-any.whl", hash = "sha256:7405140ff1230c310e51dc27b3145b9092d659ce68ff733fb0cefe3ee42be028"},
-]
 
 [[package]]
 name = "attrs"
@@ -949,7 +937,6 @@ files = [
 
 [package.dependencies]
 numpy = [
-    {version = ">=1.22.4,<2", markers = "python_version < \"3.11\""},
     {version = ">=1.23.2,<2", markers = "python_version == \"3.11\""},
     {version = ">=1.26.0,<2", markers = "python_version >= \"3.12\""},
 ]
@@ -1394,7 +1381,7 @@ description = "Tensors and Dynamic neural networks in Python with strong GPU acc
 optional = false
 python-versions = ">=3.8.0"
 files = [
-    {file = "torch-2.1.0+cu121-cp310-cp310-linux_x86_64.whl", hash = "sha256:0d4e8c52a1fcf5ed6cfc256d9a370fcf4360958fc79d0b08a51d55e70914df46"},
+    {file = "torch-2.1.0+cu121-cp311-cp311-linux_x86_64.whl", hash = "sha256:aa984599c2c4ffbc57c48d0d965cbe832e610c967e8179d4ac0a582c733fe112"},
 ]
 
 [package.dependencies]
@@ -1412,7 +1399,7 @@ opt-einsum = ["opt-einsum (>=3.3)"]
 
 [package.source]
 type = "url"
-url = "https://download.pytorch.org/whl/cu121/torch-2.1.0%2Bcu121-cp310-cp310-linux_x86_64.whl"
+url = "https://download.pytorch.org/whl/cu121/torch-2.1.0%2Bcu121-cp311-cp311-linux_x86_64.whl"
 
 [[package]]
 name = "torch"
@@ -1421,7 +1408,7 @@ description = "Tensors and Dynamic neural networks in Python with strong GPU acc
 optional = false
 python-versions = ">=3.8.0"
 files = [
-    {file = "torch-2.1.0+cu121-cp310-cp310-win_amd64.whl", hash = "sha256:6ee083ba804e863af059ea284c1678c1b0628699fb0014c8e043ceed7d4ce930"},
+    {file = "torch-2.1.0+cu121-cp311-cp311-win_amd64.whl", hash = "sha256:3b7c6dd1ab12a9c70b29bf1ea34fcf2c519233c58c619c1a553d328955c8a602"},
 ]
 
 [package.dependencies]
@@ -1437,7 +1424,7 @@ opt-einsum = ["opt-einsum (>=3.3)"]
 
 [package.source]
 type = "url"
-url = "https://download.pytorch.org/whl/cu121/torch-2.1.0%2Bcu121-cp310-cp310-win_amd64.whl"
+url = "https://download.pytorch.org/whl/cu121/torch-2.1.0%2Bcu121-cp311-cp311-win_amd64.whl"
 
 [[package]]
 name = "torchaudio"
@@ -1446,7 +1433,7 @@ description = "An audio package for PyTorch"
 optional = false
 python-versions = "*"
 files = [
-    {file = "torchaudio-2.1.0+cu121-cp310-cp310-linux_x86_64.whl", hash = "sha256:676bda4042734eda99bc59b2d7f761f345d3cde0cad492ad34e3aefde688c6d8"},
+    {file = "torchaudio-2.1.0+cu121-cp311-cp311-linux_x86_64.whl", hash = "sha256:70282de5756a33de96dca1cc5b68eb958df69d5aef8869880403e097db1ff091"},
 ]
 
 [package.dependencies]
@@ -1454,7 +1441,7 @@ torch = "2.1.0"
 
 [package.source]
 type = "url"
-url = "https://download.pytorch.org/whl/cu121/torchaudio-2.1.0%2Bcu121-cp310-cp310-linux_x86_64.whl"
+url = "https://download.pytorch.org/whl/cu121/torchaudio-2.1.0%2Bcu121-cp311-cp311-linux_x86_64.whl"
 
 [[package]]
 name = "torchaudio"
@@ -1463,7 +1450,7 @@ description = "An audio package for PyTorch"
 optional = false
 python-versions = "*"
 files = [
-    {file = "torchaudio-2.1.0+cu121-cp310-cp310-win_amd64.whl", hash = "sha256:7e4a9a2f899dcd87c9f069a00658e5720bfb45cfe2e8cc944cb4d45104bbf91a"},
+    {file = "torchaudio-2.1.0+cu121-cp311-cp311-win_amd64.whl", hash = "sha256:4357382a29000c474bd246957035c6542233eb75bb5750c89cd5a048f505754a"},
 ]
 
 [package.dependencies]
@@ -1471,7 +1458,7 @@ torch = "2.1.0+cu121"
 
 [package.source]
 type = "url"
-url = "https://download.pytorch.org/whl/cu121/torchaudio-2.1.0%2Bcu121-cp310-cp310-win_amd64.whl"
+url = "https://download.pytorch.org/whl/cu121/torchaudio-2.1.0%2Bcu121-cp311-cp311-win_amd64.whl"
 
 [[package]]
 name = "torchmetrics"
@@ -1509,7 +1496,7 @@ description = "image and video datasets and models for torch deep learning"
 optional = false
 python-versions = ">=3.8"
 files = [
-    {file = "torchvision-0.16.0+cu121-cp310-cp310-linux_x86_64.whl", hash = "sha256:e76e78d0ad43636c9884b3084ffaea8a8b61f21129fbfa456a5fe734f0affea9"},
+    {file = "torchvision-0.16.0+cu121-cp311-cp311-linux_x86_64.whl", hash = "sha256:7a325270c7806571ceddbd27c8ece5c163cceb476f09dcca7eb5157073216b22"},
 ]
 
 [package.dependencies]
@@ -1523,7 +1510,7 @@ scipy = ["scipy"]
 
 [package.source]
 type = "url"
-url = "https://download.pytorch.org/whl/cu121/torchvision-0.16.0%2Bcu121-cp310-cp310-linux_x86_64.whl"
+url = "https://download.pytorch.org/whl/cu121/torchvision-0.16.0%2Bcu121-cp311-cp311-linux_x86_64.whl"
 
 [[package]]
 name = "torchvision"
@@ -1532,7 +1519,7 @@ description = "image and video datasets and models for torch deep learning"
 optional = false
 python-versions = ">=3.8"
 files = [
-    {file = "torchvision-0.16.0+cu121-cp310-cp310-win_amd64.whl", hash = "sha256:7bb32e2c163766045693e557b61f278eb54960e7cab7c5d6037b89847605e26c"},
+    {file = "torchvision-0.16.0+cu121-cp311-cp311-win_amd64.whl", hash = "sha256:09dea0b374be56df4ae148e83221f172a8a6c999475e9483037ab6efa3cd6b80"},
 ]
 
 [package.dependencies]
@@ -1546,7 +1533,7 @@ scipy = ["scipy"]
 
 [package.source]
 type = "url"
-url = "https://download.pytorch.org/whl/cu121/torchvision-0.16.0%2Bcu121-cp310-cp310-win_amd64.whl"
+url = "https://download.pytorch.org/whl/cu121/torchvision-0.16.0%2Bcu121-cp311-cp311-win_amd64.whl"
 
 [[package]]
 name = "tqdm"
@@ -1753,5 +1740,5 @@ multidict = ">=4.0"
 
 [metadata]
 lock-version = "2.0"
-python-versions = "^3.10"
-content-hash = "106fcff6a31cfd1b4778c34c75fa479943ea5887663da14c5fedb3af8159f42c"
+python-versions = "^3.11"
+content-hash = "27e3bc02e8d0a0dea7fe0ac6e9975465e06cf6c62b6b2909a751064138b0efab"
