@@ -1,4 +1,5 @@
 import os
+from pathlib import Path
 from typing import Optional, Callable
 from PIL import Image
 from torchvision import transforms
@@ -6,14 +7,14 @@ from torch.utils.data import Dataset
 
 class LungSegmentationDataset(Dataset):
     def __init__(
-        self, image_dir: str, mask_dir: str, transform: Optional[Callable] = None
+        self, image_dir: Path, mask_dir: Path, transform: Optional[Callable] = None
     ) -> None:
         """
         Custom dataset for lung segmentation.
 
         Args:
-            image_dir (str): Path to the directory containing images.
-            mask_dir (str): Path to the directory containing corresponding masks.
+            image_dir (Path): Path to the directory containing images.
+            mask_dir (Path): Path to the directory containing corresponding masks.
             transform (callable, optional): Optional transform to be applied on a sample.
         """
         self.image_dir = image_dir

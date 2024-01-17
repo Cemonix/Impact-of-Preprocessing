@@ -1,4 +1,5 @@
 import os
+from pathlib import Path
 from typing import Optional
 from pytorch_lightning import LightningDataModule
 from torch.utils.data import DataLoader, random_split
@@ -8,7 +9,7 @@ from UNet.lung_dataset import LungSegmentationDataset
 
 class LungSegmentationDataModule(LightningDataModule):
     def __init__(
-        self, image_dir: str, mask_dir: str, batch_size: int = 4, num_of_workers: int = 8,
+        self, image_dir: Path, mask_dir: Path, batch_size: int = 4, num_of_workers: int = 8,
         train_ratio: float = 0.8, transform: Optional[transforms.Compose] = None
     ) -> None:
         super().__init__()

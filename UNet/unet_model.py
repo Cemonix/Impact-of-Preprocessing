@@ -42,7 +42,6 @@ class UNetModel(pl.LightningModule):
         self.metrics.update(torch.sigmoid(predictions), binary_masks)
 
     def on_validation_epoch_end(self):
-        # Log validation metrics
         metrics = self.metrics.compute()
         for name, value in metrics.items():
             self.log(f'val_{name}', value)
