@@ -1,49 +1,19 @@
 fail_fast: true
 repos:
-- repo: local
-  hooks:
-    - id: black
-      name: black
-      require_serial: true
-      entry: bash -c 'black "${@}"; git add -u'
-      language: system
-      types: [file, python]
-      os: [linux, mac]
+  - repo: https://github.com/psf/black
+    rev: '23.12.1'
+    hooks:
+      - id: black
+        args: [--line-length=120]
 
-    - id: black
-      name: black (Windows)
-      require_serial: true
-      entry: powershell -Command "black '$ARGS'; git add -u"
-      language: system
-      types: [file, python]
-      os: [windows]
+  - repo: https://github.com/pycqa/isort
+    rev: '5.13.2'
+    hooks:
+      - id: isort
+        args: ["--profile", "black", --line-length=120]
 
-    - id: isort
-      name: isort
-      require_serial: true
-      entry: bash -c 'isort "${@}"; git add -u'
-      language: system
-      types: [file, python]
-
-    - id: isort
-      name: isort (Windows)
-      require_serial: true
-      entry: powershell -Command "isort '$ARGS'; git add -u"
-      language: system
-      types: [file, python]
-      os: [windows]
-
-    - id: ruff
-      name: ruff
-      require_serial: true
-      entry: bash -c 'ruff "${@}"; git add -u'
-      language: system
-      types: [file, python]
-
-    - id: ruff
-      name: ruff (Windows)
-      require_serial: true
-      entry: powershell -Command "ruff '$ARGS'; git add -u"
-      language: system
-      types: [file, python]
-      os: [windows]
+  - repo: https://github.com/astral-sh/ruff-pre-commit
+    rev: 'v0.1.14'
+    hooks:
+      - id: ruff
+      - id: ruff-format
