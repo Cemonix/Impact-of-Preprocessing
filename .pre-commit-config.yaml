@@ -1,0 +1,49 @@
+fail_fast: true
+repos:
+- repo: local
+  hooks:
+    - id: black
+      name: black
+      require_serial: true
+      entry: bash -c 'black "${@}"; git add -u'
+      language: system
+      types: [file, python]
+      os: [linux, mac]
+
+    - id: black
+      name: black (Windows)
+      require_serial: true
+      entry: powershell -Command "black '$ARGS'; git add -u"
+      language: system
+      types: [file, python]
+      os: [windows]
+
+    - id: isort
+      name: isort
+      require_serial: true
+      entry: bash -c 'isort "${@}"; git add -u'
+      language: system
+      types: [file, python]
+
+    - id: isort
+      name: isort (Windows)
+      require_serial: true
+      entry: powershell -Command "isort '$ARGS'; git add -u"
+      language: system
+      types: [file, python]
+      os: [windows]
+
+    - id: ruff
+      name: ruff
+      require_serial: true
+      entry: bash -c 'ruff "${@}"; git add -u'
+      language: system
+      types: [file, python]
+
+    - id: ruff
+      name: ruff (Windows)
+      require_serial: true
+      entry: powershell -Command "ruff '$ARGS'; git add -u"
+      language: system
+      types: [file, python]
+      os: [windows]

@@ -41,6 +41,9 @@ if __name__ == '__main__':
     )
     trainer.fit(model, datamodule=datamodule)
 
-    # TODO: Načíst model a podívat se jaké generuje masky
-    # TODO: Udělat konfigurační soubor pro nastavování hyperparametrů, metrik
+    # TODO: Implementovat načítání modelů
+    # TODO: Implementovat vizualizaci výstupu z modelu
+    # TODO: Funkce na zanesení šumu do obrazu
+    # TODO: První DAE - denoising autoencoder
+
     # TODO: Citovat dataset
