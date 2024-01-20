@@ -28,7 +28,19 @@ pandas = "^2.1.4"
 tensorboard = "^2.15.1"
 pydantic = "^2.5.3"
 pre-commit = "^3.6.0"
+opencv-python = "^4.9.0.80"
 
 [build-system]
 requires = ["poetry-core"]
 build-backend = "poetry.core.masonry.api"
+
+[tool.isort]
+profile = "black"
+line_length = 80
+
+[tool.black]
+line-length = 80
+target-version = ['py311']
+
+[tool.ruff]
+line-length = 80
