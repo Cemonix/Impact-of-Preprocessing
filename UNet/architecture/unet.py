@@ -2,7 +2,22 @@ import torch
 import torch.nn as nn
 from pytorch_lightning import LightningModule
 
-from UNet.Network.double_conv import DoubleConv
+
+class DoubleConv(LightningModule):
+    def __init__(self, in_channels: int, out_channels: int) -> None:
+        super().__init__()
+        self.double_conv = nn.Sequential(
+            nn.Conv2d(in_channels, out_channels, kernel_size=3, padding=1),
+            nn.BatchNorm2d(out_channels),
+            nn.ReLU(inplace=True),
+            nn.Conv2d(out_channels, out_channels, kernel_size=3, padding=1),
+            nn.BatchNorm2d(out_channels),
+            nn.ReLU(inplace=True),
+        )
+
+    def forward(self, x: torch.Tensor) -> torch.Tensor:
+        return self.double_conv(x)
+
 
 class UNet(LightningModule):
     def __init__(self, n_channels: int, n_classes: int) -> None:
@@ -12,7 +27,9 @@ class UNet(LightningModule):
 
         base = 64
         multiplier = 2
-        layers = [base * multiplier ** i for i in range(5)] # [64, 128, 256, 512, 1024]
+        layers = [
+            base * multiplier**i for i in range(5)
+        ]  # [64, 128, 256, 512, 1024]
 
         # Downsampling layers
         self.downs = nn.ModuleList(
@@ -26,7 +43,9 @@ class UNet(LightningModule):
         # Upsampling layers
         self.ups = nn.ModuleList(
             [
-                nn.ConvTranspose2d(layers[i], layers[i - 1], kernel_size=2, stride=2)
+                nn.ConvTranspose2d(
+                    layers[i], layers[i - 1], kernel_size=2, stride=2
+                )
                 for i in range(len(layers) - 1, 0, -1)
             ]
         )
@@ -47,14 +66,18 @@ class UNet(LightningModule):
             x = down(x)
             skip_connections.append(x)
             x = self.pool(x)
-        
+
         # Apply the last downs layer (the bridge)
         x = self.downs[-1](x)
         skip_connections.append(x)
 
         # Upsampling
-        skip_connections = skip_connections[::-1]  # Reverse for correct concatenation order
-        for up, up_conv, skip_connection in zip(self.ups, self.up_convs, skip_connections[1:]):
+        skip_connections = skip_connections[
+            ::-1
+        ]  # Reverse for correct concatenation order
+        for up, up_conv, skip_connection in zip(
+            self.ups, self.up_convs, skip_connections[1:]
+        ):
             x = up(x)
             x = torch.cat([x, skip_connection], dim=1)
             x = up_conv(x)
