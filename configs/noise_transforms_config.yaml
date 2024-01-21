@@ -1,0 +1,22 @@
+gaussian:
+  mean: 0
+  stddev: 10
+
+speckle:
+  intensity: 0.05
+
+salt_and_pepper:
+  salt_prob: 0.02
+  pepper_prob: 0.02
+
+poisson: {}
+
+gaussian_blur:
+  sigma: 5
+
+motion_blur:
+  size: 15
+  angle: 45
+
+beam_hardening_artifact:
+  intensity: 0.2

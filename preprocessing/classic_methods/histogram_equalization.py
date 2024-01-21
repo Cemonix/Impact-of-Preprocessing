@@ -1,7 +1,9 @@
 import numpy as np
-from PIL import Image
-
 import numpy.typing as npt
+import plotly.graph_objects as go
+from PIL import Image
+from plotly.subplots import make_subplots
+
 
 def load_image_as_grayscale(path_to_image: str) -> npt.NDArray:
     """
@@ -13,21 +15,22 @@ def load_image_as_grayscale(path_to_image: str) -> npt.NDArray:
     Returns:
         npt.NDArray: A 2D NumPy array representing the grayscale image.
     """
-    return np.asarray(Image.open(path_to_image).convert('L'))
+    return np.asarray(Image.open(path_to_image).convert("L"))
+
 
 def histogram_equalization_grayscale(image: npt.NDArray) -> npt.NDArray:
     """
     Perform histogram equalization on a grayscale image.
 
     This function applies histogram equalization to enhance the contrast of a
-    grayscale image. It computes the histogram of the image, calculates the 
-    cumulative distribution function (CDF), and uses it to transform the pixel 
-    values. The transformed image is returned as a new NumPy array with enhanced 
+    grayscale image. It computes the histogram of the image, calculates the
+    cumulative distribution function (CDF), and uses it to transform the pixel
+    values. The transformed image is returned as a new NumPy array with enhanced
     contrast.
 
     Args:
         image (npt.NDArray): A 2D NumPy array representing the grayscale image
-                             to be processed. It should be an 8-bit image with 
+                             to be processed. It should be an 8-bit image with
                              values ranging from 0 to 255.
 
     Returns:
@@ -42,12 +45,12 @@ def histogram_equalization_grayscale(image: npt.NDArray) -> npt.NDArray:
     transformed_img: npt.NDArray = np.round(
         (cdf[image] - cdf_min) / (M * N - cdf_min) * (255)
     )
-    return transformed_img.astype('uint8')
+    return transformed_img.astype("uint8")
 
-import plotly.graph_objects as go
-from plotly.subplots import make_subplots
 
-def visualize_he_histograms(original_image: npt.NDArray, transformed_image: npt.NDArray) -> None:
+def visualize_he_histograms(
+    original_image: npt.NDArray, transformed_image: npt.NDArray
+) -> None:
     """
     Visualize the histograms of the original and transformed images using Plotly.
 
@@ -76,33 +79,57 @@ def visualize_he_histograms(original_image: npt.NDArray, transformed_image: npt.
 
     # Create subplots
     fig = make_subplots(
-        rows=1, cols=2,
-        subplot_titles=("Original Image Histogram", "Transformed Image Histogram")
+        rows=1,
+        cols=2,
+        subplot_titles=(
+            "Original Image Histogram",
+            "Transformed Image Histogram",
+        ),
     )
 
     # Add histograms to subplots
     fig.add_trace(
         go.Bar(
-            x=list(range(256)), y=original_histogram, marker_color='blue', name='Histogram'
-        ), row=1, col=1
+            x=list(range(256)),
+            y=original_histogram,
+            marker_color="blue",
+            name="Histogram",
+        ),
+        row=1,
+        col=1,
     )
     fig.add_trace(
         go.Scatter(
-            x=list(range(256)), y=cumulative_original_histogram_normalized, mode='lines',
-            name='Cumulative Histogram', line=dict(color='green')
-        ), row=1, col=1
+            x=list(range(256)),
+            y=cumulative_original_histogram_normalized,
+            mode="lines",
+            name="Cumulative Histogram",
+            line=dict(color="green"),
+        ),
+        row=1,
+        col=1,
     )
 
     fig.add_trace(
         go.Bar(
-            x=list(range(256)), y=transformed_histogram, marker_color='red', name='Histogram'
-        ), row=1, col=2
+            x=list(range(256)),
+            y=transformed_histogram,
+            marker_color="red",
+            name="Histogram",
+        ),
+        row=1,
+        col=2,
     )
     fig.add_trace(
         go.Scatter(
-            x=list(range(256)), y=cumulative_transformed_histogram_normalized, mode='lines',
-            name='Cumulative Histogram', line=dict(color='orange')
-        ), row=1, col=2
+            x=list(range(256)),
+            y=cumulative_transformed_histogram_normalized,
+            mode="lines",
+            name="Cumulative Histogram",
+            line=dict(color="orange"),
+        ),
+        row=1,
+        col=2,
     )
 
     # Update layout
@@ -111,13 +138,12 @@ def visualize_he_histograms(original_image: npt.NDArray, transformed_image: npt.
     )
     fig.show()
 
-if __name__ == '__main__':
-    image = load_image_as_grayscale('ChestImages/JPCNN001.jpg')
+
+if __name__ == "__main__":
+    image = load_image_as_grayscale("ChestImages/JPCNN001.jpg")
     equalized_image = histogram_equalization_grayscale(image)
 
     visualize_he_histograms(image, equalized_image)
 
     transformed_image = Image.fromarray(equalized_image)
     transformed_image.show()
-
-    # TODO: CLAHE

@@ -1,22 +1,15 @@
 from pathlib import Path
 
-import yaml
 from pytorch_lightning import Trainer
 from torchmetrics import JaccardIndex, MetricCollection
 
-from common.configs import UnetConfig
-from UNet.data_module import LungSegmentationDataModule
-from UNet.unet_model import UNetModel
-
-
-def load_config(config_path: Path) -> UnetConfig:
-    with open(config_path, "r") as file:
-        config_dict = yaml.safe_load(file)
-        return UnetConfig(**config_dict)
-
+from common.configs.config import load_config
+from common.configs.unet_config import UnetConfig
+from unet.data_module import LungSegmentationDataModule
+from unet.unet_model import UNetModel
 
 if __name__ == "__main__":
-    unet_config = load_config(Path("Configs/unet_config.yaml"))
+    unet_config: UnetConfig = load_config(Path("Configs/unet_config.yaml"))
 
     metrics = MetricCollection(
         {"jaccard_index": JaccardIndex(task="binary", num_classes=1)}
@@ -47,7 +40,6 @@ if __name__ == "__main__":
 
     # TODO: Implementovat načítání modelů
     # TODO: Implementovat vizualizaci výstupu z modelu
-    # TODO: Funkce na zanesení šumu do obrazu
     # TODO: První DAE - denoising autoencoder
 
     # TODO: Citovat dataset
