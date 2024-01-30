@@ -1,4 +1,5 @@
 from pathlib import Path
+from typing import Any, Dict
 
 import cv2
 import numpy as np
@@ -8,7 +9,7 @@ from common.data_manipulation import load_image
 from common.visualization import compare_images
 
 
-class ImageTransformHandler:
+class NoiseTransformHandler:
     def add_gaussian_noise(
         self, image: npt.NDArray, mean: float = 0, std: float = 1
     ) -> npt.NDArray:
@@ -158,10 +159,10 @@ class ImageTransformHandler:
         )
         return (image * artifact).clip(0, 255).astype(np.uint8)
 
-    def apply_noise(
+    def apply_noise_transform(
         self, image: npt.NDArray, transform_type: str, params: dict
     ) -> npt.NDArray:
-        transform_method = getattr(self, transform_type)
+        transform_method = getattr(self, f"add_{transform_type}")
 
         if transform_method and callable(transform_method):
             return transform_method(image, **params)
@@ -169,55 +170,21 @@ class ImageTransformHandler:
             return image
 
 
-def test_transformations(image_path: Path) -> None:
+def test_noise_transforms(
+    image_path: Path, noise_transform_config: Dict[str, Dict[str, Any]]
+) -> None:
     original_image = load_image(image_path)
-    transform_handler = ImageTransformHandler()
+    noise_transform_handler = NoiseTransformHandler()
+    noise_types = list(noise_transform_config.keys())
 
-    transformations = [
-        {
-            "function": transform_handler.add_gaussian_noise,
-            "params": {"mean": 0, "stddev": 10},
-            "title": "Gaussian Noise",
-        },
-        {
-            "function": transform_handler.add_speckle_noise,
-            "params": {"intensity": 0.05},
-            "title": "Speckle Noise",
-        },
-        {
-            "function": transform_handler.add_salt_and_pepper_noise,
-            "params": {"salt_prob": 0.02, "pepper_prob": 0.02},
-            "title": "Salt and Pepper Noise",
-        },
-        {
-            "function": transform_handler.add_poisson_noise,
-            "params": {},
-            "title": "Poisson Noise",
-        },
-        {
-            "function": transform_handler.add_gaussian_blur,
-            "params": {"sigma": 5},
-            "title": "Gaussian blur",
-        },
-        {
-            "function": transform_handler.add_motion_blur,
-            "params": {"size": 15, "angle": 45},
-            "title": "Motion Blur",
-        },
-        {
-            "function": transform_handler.add_beam_hardening_artifact,
-            "params": {"intensity": 0.2},
-            "title": "Beam Hardening Artifact",
-        },
-    ]
-
-    for transformation in transformations:
-        transformed_image = transformation["function"](
-            original_image, **transformation["params"]
+    for noise_type in noise_types:
+        params = noise_transform_config[noise_type]
+        noised_image = noise_transform_handler.apply_noise_transform(
+            original_image.copy(), noise_type, params
         )
         compare_images(
             original=original_image,
-            transformed=transformed_image,
+            transformed=noised_image,
             original_title="Original Image",
-            transformed_title=transformation["title"],
+            transformed_title=noise_type,
         )

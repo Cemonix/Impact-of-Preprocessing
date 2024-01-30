@@ -1,15 +1,15 @@
-gaussian:
+gaussian_noise:
   mean: 0
-  stddev: 10
+  std: 10
 
-speckle:
+speckle_noise:
   intensity: 0.05
 
-salt_and_pepper:
+salt_and_pepper_noise:
   salt_prob: 0.02
   pepper_prob: 0.02
 
-poisson: {}
+poisson_noise: {}
 
 gaussian_blur:
   sigma: 5

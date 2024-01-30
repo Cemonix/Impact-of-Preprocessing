@@ -72,9 +72,7 @@ class UNet(LightningModule):
         skip_connections.append(x)
 
         # Upsampling
-        skip_connections = skip_connections[
-            ::-1
-        ]  # Reverse for correct concatenation order
+        skip_connections = skip_connections[::-1]
         for up, up_conv, skip_connection in zip(
             self.ups, self.up_convs, skip_connections[1:]
         ):

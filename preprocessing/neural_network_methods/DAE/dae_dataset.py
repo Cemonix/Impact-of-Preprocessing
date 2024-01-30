@@ -7,7 +7,7 @@ from PIL import Image
 from torch.utils.data import Dataset
 from torchvision import transforms
 
-from common.image_transforms import ImageTransformHandler
+from common.noise_transforms import NoiseTransformHandler
 
 
 class DAEDataset(Dataset):
@@ -21,7 +21,7 @@ class DAEDataset(Dataset):
         self.transform = transform
         self.noise_transform_config = noise_transform_config
 
-        self.noise_transform_handler = ImageTransformHandler()
+        self.noise_transform_handler = NoiseTransformHandler()
         self.images = os.listdir(image_dir)
 
     def __len__(self) -> int:
@@ -35,12 +35,12 @@ class DAEDataset(Dataset):
         selected_noise_type = random.choice(noise_types)
         params = self.noise_transform_config[selected_noise_type]
 
-        noisy_image = self.noise_transform_handler.apply_noise(
+        noised_image = self.noise_transform_handler.apply_noise_transform(
             image.copy(), selected_noise_type, params
         )
 
         if self.transform:
             image = self.transform(image)
-            noisy_image = self.transform(noisy_image)
+            noised_image = self.transform(noised_image)
 
-        return image, noisy_image
+        return image, noised_image
