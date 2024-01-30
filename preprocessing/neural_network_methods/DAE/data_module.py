@@ -5,7 +5,7 @@ from torch.utils.data import random_split
 from torchvision import transforms
 
 from common.data_module import DataModule
-from preprocessing.neural_network_methods.DAE.dae_dataset import DAEDataset
+from preprocessing.neural_network_methods.DAE.dataset import DAEDataset
 
 
 class DAEDataModule(DataModule):

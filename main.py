@@ -1,21 +1,25 @@
 from pathlib import Path
+from typing import Any, Dict
 
 from pytorch_lightning import Trainer
 from torchmetrics import (
-    MetricCollection,
     JaccardIndex,
+    MetricCollection,
     PeakSignalNoiseRatio,
     StructuralSimilarityIndexMeasure,
 )
-from typing import Any, Dict
 
 from common.configs.config import load_config
-from common.configs.unet_config import UnetConfig
 from common.configs.dae_config import DAEConfig
-from unet.data_module import LungSegmentationDataModule
-from unet.unet_model import UNetModel
-from preprocessing.neural_network_methods.DAE.dae_model import DAEModel
+from common.configs.unet_config import UnetConfig
 from preprocessing.neural_network_methods.DAE.data_module import DAEDataModule
+from preprocessing.neural_network_methods.DAE.model import DAEModel
+from preprocessing.neural_network_methods.DAE.model_inference import (
+    DAEInference,
+)
+from unet.data_module import LungSegmentationDataModule
+from unet.model import UNetModel
+
 
 def dae_train():
     dae_config: DAEConfig = load_config(Path("configs/dae_config.yaml"))
@@ -47,9 +51,16 @@ def dae_train():
     trainer = Trainer(
         accelerator=dae_config.training.accelerator,
         max_epochs=dae_config.training.max_epochs,
-
     )
     trainer.fit(model, datamodule=datamodule)
+
+
+def dae_test_model(path_to_model: Path, path_to_image: Path):
+    dae_inference = DAEInference(path_to_model)
+    img_tensor = dae_inference.process_image(path_to_image)
+    output = dae_inference.perform_inference(img_tensor)
+    dae_inference.postprocess_and_display(output)
+
 
 def unet_train():
     unet_config: UnetConfig = load_config(Path("configs/unet_config.yaml"))
@@ -79,11 +90,15 @@ def unet_train():
     )
     trainer.fit(model, datamodule=datamodule)
 
-if __name__ == "__main__":
-    dae_train()
 
-    # TODO: Implementovat načítání modelů
-    # TODO: Implementovat vizualizaci výstupu z modelu
-    # TODO: První DAE - denoising autoencoder
+if __name__ == "__main__":
+    dae_test_model(
+        Path(
+            "lightning_logs/dae_model_v_0/checkpoints/epoch=49-step=1600.ckpt"
+        ),
+        Path("data/LungSegmentation/CXR_png/CHNCXR_0001_0.png"),
+    )
+
+    # TODO: Think about dae model - apply only one noise, make net smaller, ...
 
     # TODO: Citovat dataset

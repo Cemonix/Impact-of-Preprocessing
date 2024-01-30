@@ -18,7 +18,7 @@
             "type": "python",
             "request": "launch",
             "cwd": "${workspaceFolder}",
-            "program": "test/test.py",
+            "program": "test.py",
             "console": "integratedTerminal",
             "justMyCode": true
         },

@@ -5,7 +5,7 @@ from torch.utils.data import random_split
 from torchvision import transforms
 
 from common.data_module import DataModule
-from unet.lung_dataset import LungSegmentationDataset
+from unet.dataset import LungSegmentationDataset
 
 
 class LungSegmentationDataModule(DataModule):

@@ -3,9 +3,12 @@ from typing import Any, Dict
 import torch
 import torch.nn.functional as F
 import torch.optim as optim
-from preprocessing.neural_network_methods.DAE.architecture.denoising_autoencoder import DenoisingAutoencoder
 from pytorch_lightning import LightningModule
 from torchmetrics import MeanSquaredError, MetricCollection
+
+from preprocessing.neural_network_methods.DAE.architecture.denoising_autoencoder import (
+    DenoisingAutoencoder,
+)
 
 
 class DAEModel(LightningModule):
@@ -18,7 +21,7 @@ class DAEModel(LightningModule):
         super(DAEModel, self).__init__()
         self.learning_rate = learning_rate
         self.metrics = metrics or MetricCollection({"MSE": MeanSquaredError()})
-        self.save_hyperparameters()
+        self.save_hyperparameters(ignore=["metrics"])
         self.model = DenoisingAutoencoder(n_channels)
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
