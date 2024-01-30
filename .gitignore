@@ -157,3 +157,6 @@ LungSegmentation/
 
 # Trained models
 lightning_logs/
+
+# PyCharm
+.idea/
