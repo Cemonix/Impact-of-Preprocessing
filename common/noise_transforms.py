@@ -2,6 +2,7 @@ from pathlib import Path
 from typing import Any, Dict
 
 import cv2
+from PIL import Image
 import numpy as np
 from numpy import typing as npt
 
@@ -161,13 +162,13 @@ class NoiseTransformHandler:
 
     def apply_noise_transform(
         self, image: npt.NDArray, transform_type: str, params: dict
-    ) -> npt.NDArray:
+    ) -> Image:
         transform_method = getattr(self, f"add_{transform_type}")
 
         if transform_method and callable(transform_method):
-            return transform_method(image, **params)
+            return Image.fromarray(transform_method(image, **params))
         else:
-            return image
+            return Image.fromarray(image)
 
 
 def test_noise_transforms(

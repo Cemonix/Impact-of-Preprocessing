@@ -3,6 +3,7 @@ import random
 from pathlib import Path
 from typing import Any, Dict
 
+import numpy as np
 from PIL import Image
 from torch.utils.data import Dataset
 from torchvision import transforms
@@ -36,7 +37,7 @@ class DAEDataset(Dataset):
         params = self.noise_transform_config[selected_noise_type]
 
         noised_image = self.noise_transform_handler.apply_noise_transform(
-            image.copy(), selected_noise_type, params
+            np.array(image.copy()), selected_noise_type, params
         )
 
         if self.transform:

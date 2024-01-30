@@ -28,9 +28,6 @@ class DataModule(ABC, LightningDataModule):
         assert os.path.exists(
             self.image_dir
         ), f"Image directory {self.image_dir} does not exist."
-        assert os.path.exists(
-            self.mask_dir
-        ), f"Mask directory {self.mask_dir} does not exist."
 
     @abstractmethod
     def setup(self, stage: Optional[str] = None) -> None:

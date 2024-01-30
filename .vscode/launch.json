@@ -8,6 +8,7 @@
             "name": "Python: Main",
             "type": "python",
             "request": "launch",
+            "cwd": "${workspaceFolder}",
             "program": "main.py",
             "console": "integratedTerminal",
             "justMyCode": true
@@ -16,7 +17,8 @@
             "name": "Python: Test",
             "type": "python",
             "request": "launch",
-            "program": "test.py",
+            "cwd": "${workspaceFolder}",
+            "program": "test/test.py",
             "console": "integratedTerminal",
             "justMyCode": true
         },

@@ -3,7 +3,7 @@ from typing import Any, Dict
 import torch
 import torch.nn.functional as F
 import torch.optim as optim
-from DAE.architecture.denoising_autoencoder import DenoisingAutoencoder
+from preprocessing.neural_network_methods.DAE.architecture.denoising_autoencoder import DenoisingAutoencoder
 from pytorch_lightning import LightningModule
 from torchmetrics import MeanSquaredError, MetricCollection
 

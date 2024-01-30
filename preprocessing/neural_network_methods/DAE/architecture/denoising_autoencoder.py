@@ -4,10 +4,10 @@ from pytorch_lightning import LightningModule
 
 
 class ConvBlock(LightningModule):
-    def __init__(self, in_channels: int, out_channels: int) -> None:
+    def __init__(self, in_channels: int, out_channels: int, stride: int = 1) -> None:
         super(ConvBlock, self).__init__()
         self.conv = nn.Sequential(
-            nn.Conv2d(in_channels, out_channels, kernel_size=3, padding=1),
+            nn.Conv2d(in_channels, out_channels, kernel_size=3, padding=1, stride=stride),
             nn.BatchNorm2d(out_channels),
             nn.ReLU(inplace=True),
         )
@@ -48,7 +48,7 @@ class DenoisingAutoencoder(LightningModule):
         super(DenoisingAutoencoder, self).__init__()
 
         self.encoder = nn.Sequential(
-            ConvBlock(n_channels, 64),
+            ConvBlock(n_channels, 64, stride=2),
             ResidualBlock(64),
             ConvBlock(64, 128, stride=2),
             ResidualBlock(128),
