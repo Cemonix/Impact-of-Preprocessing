@@ -12,6 +12,7 @@ from torchmetrics import (
 from common.configs.config import load_config
 from common.configs.dae_config import DAEConfig
 from common.configs.unet_config import UnetConfig
+from common.data_manipulation import load_image
 from preprocessing.neural_network_methods.DAE.data_module import DAEDataModule
 from preprocessing.neural_network_methods.DAE.model import DAEModel
 from preprocessing.neural_network_methods.DAE.model_inference import (
@@ -19,6 +20,7 @@ from preprocessing.neural_network_methods.DAE.model_inference import (
 )
 from unet.data_module import LungSegmentationDataModule
 from unet.model import UNetModel
+from unet.model_inference import UnetInference
 
 
 def dae_train():
@@ -55,11 +57,12 @@ def dae_train():
     trainer.fit(model, datamodule=datamodule)
 
 
-def dae_test_model(path_to_model: Path, path_to_image: Path):
+def dae_test_model(path_to_model: Path, path_to_image: Path) -> None:
+    image = load_image(path_to_image)
     dae_inference = DAEInference(path_to_model)
-    img_tensor = dae_inference.process_image(path_to_image)
-    output = dae_inference.perform_inference(img_tensor)
-    dae_inference.postprocess_and_display(output)
+    img_tensor = dae_inference.process_image(image)
+    prediction = dae_inference.perform_inference(img_tensor)
+    dae_inference.postprocess_and_display(image, prediction)
 
 
 def unet_train():
@@ -91,13 +94,28 @@ def unet_train():
     trainer.fit(model, datamodule=datamodule)
 
 
+def unet_test_model(path_to_model: Path, path_to_image: Path) -> None:
+    image = load_image(path_to_image)
+    unet_inference = UnetInference(path_to_model)
+    img_tensor = unet_inference.process_image(image)
+    prediction = unet_inference.perform_inference(img_tensor)
+    unet_inference.postprocess_and_display(image, prediction)
+
+
 if __name__ == "__main__":
-    dae_test_model(
+    unet_test_model(
         Path(
-            "lightning_logs/dae_model_v_0/checkpoints/epoch=49-step=1600.ckpt"
+            "lightning_logs/main_model/checkpoints/epoch=99-step=3200.ckpt"
         ),
-        Path("data/LungSegmentation/CXR_png/CHNCXR_0001_0.png"),
+        Path("data/LungSegmentation/CXR_png/CHNCXR_0250_0.png"),
     )
+
+    # dae_test_model(
+    #     Path(
+    #         "lightning_logs/dae_model_v_0/checkpoints/epoch=49-step=1600.ckpt"
+    #     ),
+    #     Path("data/LungSegmentation/CXR_png/CHNCXR_0001_0.png"),
+    # )
 
     # TODO: Think about dae model - apply only one noise, make net smaller, ...
 

@@ -24,7 +24,7 @@ class UNetModel(pl.LightningModule):
                 )
             }
         )
-        self.save_hyperparameters()
+        self.save_hyperparameters(ignore=['metrics'])
         self.model = UNet(n_channels, n_classes)
 
     def configure_optimizers(self) -> Optimizer:

@@ -2,6 +2,7 @@ from abc import ABCMeta, abstractmethod
 from pathlib import Path
 from typing import Any
 
+from numpy import typing as npt
 import torch
 from PIL import Image
 from torchvision.transforms import transforms
@@ -28,20 +29,15 @@ class ModelInference(metaclass=ABCMeta):
         self.model.to(self.device)
         self.model.eval()
 
-    def process_image(self, path_to_img: Path) -> torch.Tensor:
-        img = Image.open(path_to_img).convert("L")
-        img_tensor: torch.Tensor = self.transform(img).unsqueeze(0)
+    def process_image(self, image: Image.Image) -> torch.Tensor:
+        img_tensor: torch.Tensor = self.transform(image).unsqueeze(0)
         return img_tensor.to(self.device)
 
     def perform_inference(self, img_tensor) -> torch.Tensor:
         with torch.no_grad():
-            output: torch.Tensor = self.model(img_tensor)
-        return output.cpu()
+            prediction: torch.Tensor = self.model(img_tensor)
+        return prediction.cpu()
 
     @abstractmethod
     def load_model(self, path_to_model: Path) -> Any:
-        pass
-
-    @abstractmethod
-    def postprocess_and_display(self, output: Any) -> None:
         pass

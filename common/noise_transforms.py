@@ -162,7 +162,7 @@ class NoiseTransformHandler:
 
     def apply_noise_transform(
         self, image: npt.NDArray, transform_type: str, params: dict
-    ) -> Image:
+    ) -> Image.Image:
         transform_method = getattr(self, f"add_{transform_type}")
 
         if transform_method and callable(transform_method):
@@ -174,7 +174,7 @@ class NoiseTransformHandler:
 def test_noise_transforms(
     image_path: Path, noise_transform_config: Dict[str, Dict[str, Any]]
 ) -> None:
-    original_image = load_image(image_path)
+    original_image = np.array(load_image(image_path))
     noise_transform_handler = NoiseTransformHandler()
     noise_types = list(noise_transform_config.keys())
 

@@ -5,7 +5,6 @@ from numpy import typing as npt
 from PIL import Image
 
 
-def load_image(image_path: Path) -> npt.NDArray:
-    """Loads an image as a grayscale numpy array."""
+def load_image(image_path: Path) -> Image.Image:
     with Image.open(image_path) as img:
-        return np.array(img.convert("L"))
+        return img.convert("L")
