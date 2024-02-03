@@ -18,6 +18,11 @@ from preprocessing.neural_network_methods.DAE.model import DAEModel
 from preprocessing.neural_network_methods.DAE.model_inference import (
     DAEInference,
 )
+from preprocessing.neural_network_methods.DnCNN.data_module import DnCNNDataModule
+from preprocessing.neural_network_methods.DnCNN.model import DnCNNModel
+from preprocessing.neural_network_methods.DnCNN.model_inference import (
+    DnCNNInference,
+)
 from unet.data_module import LungSegmentationDataModule
 from unet.model import UNetModel
 from unet.model_inference import UnetInference
@@ -102,10 +107,54 @@ def dae_test_model(path_to_model: Path, path_to_image: Path) -> None:
     dae_inference.postprocess_and_display(image, prediction)
 
 
+def dncnn_train():
+    dncnn_config: DAEConfig = load_config(Path("configs/dae_config.yaml"))
+    noise_transform_config: Dict[str, Dict[str, Any]] = load_config(
+        Path("configs/noise_transforms_config.yaml")
+    )
+
+    metrics = MetricCollection(
+        {
+            "PSNR": PeakSignalNoiseRatio(),
+            "SSIM": StructuralSimilarityIndexMeasure(),
+        }
+    )
+
+    model = DnCNNModel(
+        n_channels=dncnn_config.model.n_channels,
+        learning_rate=dncnn_config.model.learning_rate,
+        metrics=metrics,
+    )
+
+    datamodule = DnCNNDataModule(
+        image_dir=dncnn_config.dataloader.image_dir,
+        noise_transform_config=noise_transform_config,
+        batch_size=dncnn_config.dataloader.batch_size,
+        num_of_workers=dncnn_config.dataloader.num_workers,
+        train_ratio=dncnn_config.dataloader.train_ratio,
+    )
+
+    trainer = Trainer(
+        accelerator=dncnn_config.training.accelerator,
+        max_epochs=dncnn_config.training.max_epochs,
+    )
+    trainer.fit(model, datamodule=datamodule)
+
+
+def dncnn_test_model(path_to_model: Path, path_to_image: Path) -> None:
+    image = load_image(path_to_image)
+    dae_inference = DnCNNInference(path_to_model)
+    img_tensor = dae_inference.process_image(image)
+    prediction = dae_inference.perform_inference(img_tensor)
+    dae_inference.postprocess_and_display(image, prediction)
+
+
 if __name__ == "__main__":
     # unet_train()
     
     # dae_train()
+
+    dncnn_train()
 
     # unet_test_model(
     #     Path(
@@ -114,12 +163,18 @@ if __name__ == "__main__":
     #     Path("data/LungSegmentation/CXR_png/CHNCXR_0250_0.png"),
     # )
 
-    dae_test_model(
-        Path(
-            "lightning_logs/dae_model_v_3/checkpoints/epoch=60-step=915.ckpt"
-        ),
-        Path("data/LungSegmentation/CXR_png/CHNCXR_0001_0.png"),
-    )
+    # dae_test_model(
+    #     Path(
+    #         "lightning_logs/dae_model_v_3/checkpoints/epoch=60-step=915.ckpt"
+    #     ),
+    #     Path("data/LungSegmentation/CXR_png/CHNCXR_0001_0.png"),
+    # )
 
+    # dncnn_test_model(
+    #     Path(
+    #         "lightning_logs/dncnn_model_v_0/checkpoints/epoch=60-step=915.ckpt"
+    #     ),
+    #     Path("data/LungSegmentation/CXR_png/CHNCXR_0001_0.png"),
+    # )
 
     # TODO: Citovat dataset
