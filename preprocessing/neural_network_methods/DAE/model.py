@@ -35,7 +35,7 @@ class DAEModel(LightningModule):
         images, clean_images = batch
         denoised_images = self(images)
         loss = F.mse_loss(denoised_images, clean_images)
-        self.log("train_loss", loss, on_step=True, prog_bar=True, logger=True)
+        self.log("train_loss", loss, on_step=True, on_epoch=True, prog_bar=True, logger=True)
         return loss
 
     def validation_step(self, batch: Any, batch_idx: int) -> None:

@@ -21,7 +21,7 @@ class DAEDataModule(DataModule):
         super().__init__(
             image_dir, batch_size, num_of_workers, train_ratio, transform
         )
-        self.noise_transform_config = noise_transform_config~
+        self.noise_transform_config = noise_transform_config
 
     def setup(self, stage: Optional[str] = None) -> None:
         if self.transform is None:

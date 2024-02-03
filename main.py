@@ -23,6 +23,43 @@ from unet.model import UNetModel
 from unet.model_inference import UnetInference
 
 
+def unet_train():
+    unet_config: UnetConfig = load_config(Path("configs/unet_config.yaml"))
+
+    metrics = MetricCollection(
+        {"jaccard_index": JaccardIndex(task="binary", num_classes=1)}
+    )
+
+    model = UNetModel(
+        n_channels=unet_config.model.n_channels,
+        n_classes=unet_config.model.n_classes,
+        learning_rate=unet_config.model.learning_rate,
+        metrics=metrics,
+    )
+
+    datamodule = LungSegmentationDataModule(
+        image_dir=unet_config.dataloader.image_dir,
+        mask_dir=unet_config.dataloader.masks_dir,
+        batch_size=unet_config.dataloader.batch_size,
+        num_of_workers=unet_config.dataloader.num_workers,
+        train_ratio=unet_config.dataloader.train_ratio,
+    )
+
+    trainer = Trainer(
+        accelerator=unet_config.training.accelerator,
+        max_epochs=unet_config.training.max_epochs,
+    )
+    trainer.fit(model, datamodule=datamodule)
+
+
+def unet_test_model(path_to_model: Path, path_to_image: Path) -> None:
+    image = load_image(path_to_image)
+    unet_inference = UnetInference(path_to_model)
+    img_tensor = unet_inference.process_image(image)
+    prediction = unet_inference.perform_inference(img_tensor)
+    unet_inference.postprocess_and_display(image, prediction)
+
+
 def dae_train():
     dae_config: DAEConfig = load_config(Path("configs/dae_config.yaml"))
     noise_transform_config: Dict[str, Dict[str, Any]] = load_config(
@@ -65,58 +102,24 @@ def dae_test_model(path_to_model: Path, path_to_image: Path) -> None:
     dae_inference.postprocess_and_display(image, prediction)
 
 
-def unet_train():
-    unet_config: UnetConfig = load_config(Path("configs/unet_config.yaml"))
-
-    metrics = MetricCollection(
-        {"jaccard_index": JaccardIndex(task="binary", num_classes=1)}
-    )
-
-    model = UNetModel(
-        n_channels=unet_config.model.n_channels,
-        n_classes=unet_config.model.n_classes,
-        learning_rate=unet_config.model.learning_rate,
-        metrics=metrics,
-    )
-
-    datamodule = LungSegmentationDataModule(
-        image_dir=unet_config.dataloader.image_dir,
-        mask_dir=unet_config.dataloader.masks_dir,
-        batch_size=unet_config.dataloader.batch_size,
-        num_of_workers=unet_config.dataloader.num_workers,
-        train_ratio=unet_config.dataloader.train_ratio,
-    )
-
-    trainer = Trainer(
-        accelerator=unet_config.training.accelerator,
-        max_epochs=unet_config.training.max_epochs,
-    )
-    trainer.fit(model, datamodule=datamodule)
-
-
-def unet_test_model(path_to_model: Path, path_to_image: Path) -> None:
-    image = load_image(path_to_image)
-    unet_inference = UnetInference(path_to_model)
-    img_tensor = unet_inference.process_image(image)
-    prediction = unet_inference.perform_inference(img_tensor)
-    unet_inference.postprocess_and_display(image, prediction)
-
-
 if __name__ == "__main__":
-    unet_test_model(
-        Path(
-            "lightning_logs/main_model/checkpoints/epoch=99-step=3200.ckpt"
-        ),
-        Path("data/LungSegmentation/CXR_png/CHNCXR_0250_0.png"),
-    )
+    # unet_train()
+    
+    # dae_train()
 
-    # dae_test_model(
+    # unet_test_model(
     #     Path(
-    #         "lightning_logs/dae_model_v_0/checkpoints/epoch=49-step=1600.ckpt"
+    #         "lightning_logs/main_model/checkpoints/epoch=99-step=3200.ckpt"
     #     ),
-    #     Path("data/LungSegmentation/CXR_png/CHNCXR_0001_0.png"),
+    #     Path("data/LungSegmentation/CXR_png/CHNCXR_0250_0.png"),
     # )
 
-    # TODO: Think about dae model - apply only one noise, make net smaller, ...
+    dae_test_model(
+        Path(
+            "lightning_logs/dae_model_v_3/checkpoints/epoch=60-step=915.ckpt"
+        ),
+        Path("data/LungSegmentation/CXR_png/CHNCXR_0001_0.png"),
+    )
+
 
     # TODO: Citovat dataset

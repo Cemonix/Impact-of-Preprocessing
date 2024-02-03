@@ -161,12 +161,15 @@ class NoiseTransformHandler:
         return (image * artifact).clip(0, 255).astype(np.uint8)
 
     def apply_noise_transform(
-        self, image: npt.NDArray, transform_type: str, params: dict
+        self, image: npt.NDArray, transform_type: str, params: dict | None = None
     ) -> Image.Image:
         transform_method = getattr(self, f"add_{transform_type}")
 
         if transform_method and callable(transform_method):
-            return Image.fromarray(transform_method(image, **params))
+            if params is None:
+                return Image.fromarray(transform_method(image))
+            else:
+                return Image.fromarray(transform_method(image, **params))
         else:
             return Image.fromarray(image)
 
