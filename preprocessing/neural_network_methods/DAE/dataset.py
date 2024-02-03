@@ -32,8 +32,9 @@ class DAEDataset(Dataset):
         img_path = os.path.join(self.image_dir, self.images[idx])
         image = Image.open(img_path).convert("L")
 
-        noise_types = list(self.noise_transform_config.keys())
-        selected_noise_type = random.choice(noise_types)
+        # noise_types = list(self.noise_transform_config.keys())
+        # selected_noise_type = random.choice(noise_types)
+        selected_noise_type = 'salt_and_pepper_noise'
         params = self.noise_transform_config[selected_noise_type]
 
         noised_image = self.noise_transform_handler.apply_noise_transform(

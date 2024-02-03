@@ -24,6 +24,10 @@ class DataModule(ABC, LightningDataModule):
         self.train_ratio = train_ratio
         self.transform = transform
 
+        self.train = None
+        self.val = None
+        self.test = None
+
     def prepare_data(self) -> None:
         assert os.path.exists(
             self.image_dir
