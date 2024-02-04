@@ -152,9 +152,9 @@ def dncnn_test_model(path_to_model: Path, path_to_image: Path) -> None:
 if __name__ == "__main__":
     # unet_train()
     
-    # dae_train()
+    dae_train()
 
-    dncnn_train()
+    # dncnn_train()
 
     # unet_test_model(
     #     Path(
@@ -172,7 +172,7 @@ if __name__ == "__main__":
 
     # dncnn_test_model(
     #     Path(
-    #         "lightning_logs/dncnn_model_v_0/checkpoints/epoch=60-step=915.ckpt"
+    #         "lightning_logs/dncnn_model_v0_512/checkpoints/epoch=49-step=750.ckpt"
     #     ),
     #     Path("data/LungSegmentation/CXR_png/CHNCXR_0001_0.png"),
     # )

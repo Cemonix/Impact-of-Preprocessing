@@ -34,7 +34,7 @@ class DnCNNDataset(Dataset):
 
         # noise_types = list(self.noise_transform_config.keys())
         # selected_noise_type = random.choice(noise_types)
-        selected_noise_type = 'salt_and_pepper_noise'
+        selected_noise_type = 'gaussian_noise'
         params = self.noise_transform_config[selected_noise_type]
 
         noised_image = self.noise_transform_handler.apply_noise_transform(

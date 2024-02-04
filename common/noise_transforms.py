@@ -27,9 +27,7 @@ class NoiseTransformHandler:
         """
         gaussian = np.random.normal(mean, std, image.shape)
         noisy_image = image + gaussian
-        noisy_image = np.clip(
-            noisy_image, 0, 255
-        )  # Ensure values are within [0, 255]
+        noisy_image = np.clip(noisy_image, 0, 255).astype(np.uint8)
         return noisy_image
 
     def add_speckle_noise(
@@ -47,7 +45,7 @@ class NoiseTransformHandler:
         """
         noise = np.random.normal(0, 1, image.shape)
         noisy_image = image + image * noise * intensity
-        noisy_image = np.clip(noisy_image, 0, 255)
+        noisy_image = np.clip(noisy_image, 0, 255).astype(np.uint8)
         return noisy_image
 
     def add_salt_and_pepper_noise(

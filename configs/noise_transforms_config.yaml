@@ -1,6 +1,6 @@
 gaussian_noise:
   mean: 0
-  std: 10
+  std: 15
 
 speckle_noise:
   intensity: 0.05

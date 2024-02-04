@@ -6,8 +6,8 @@ import torch.optim as optim
 from pytorch_lightning import LightningModule
 from torchmetrics import MeanSquaredError, MetricCollection
 
-from preprocessing.neural_network_methods.DAE.architecture.denoising_autoencoder import (
-    DenoisingAutoencoder,
+from preprocessing.neural_network_methods.DnCNN.architecture.dncnn import (
+    DnCNN,
 )
 
 
@@ -22,7 +22,7 @@ class DnCNNModel(LightningModule):
         self.learning_rate = learning_rate
         self.metrics = metrics or MetricCollection({"MSE": MeanSquaredError()})
         self.save_hyperparameters(ignore=["metrics"])
-        self.model = DenoisingAutoencoder(n_channels)
+        self.model = DnCNN(n_channels)
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         return self.model(x)
@@ -32,22 +32,22 @@ class DnCNNModel(LightningModule):
         return {"optimizer": optimizer}
 
     def training_step(self, batch: Any, batch_idx: int) -> torch.Tensor:
-        images, clean_images = batch
-        denoised_images = self(images)
-        loss = F.mse_loss(denoised_images, clean_images)
+        target, noised_image = batch
+        denoised_images = self(noised_image)
+        loss = F.mse_loss(denoised_images, target)
         self.log("train_loss", loss, on_step=True, prog_bar=True, logger=True)
         return loss
 
     def validation_step(self, batch: Any, batch_idx: int) -> None:
-        images, clean_images = batch
-        denoised_images = self(images)
+        target, noised_image = batch
+        denoised_images = self(noised_image)
 
-        loss = F.mse_loss(denoised_images, clean_images)
+        loss = F.mse_loss(denoised_images, target)
         self.log("val_loss", loss, on_epoch=True, prog_bar=True, logger=True)
 
-        self.log_metrics(denoised_images, clean_images)
+        self.log_metrics(denoised_images, target)
 
-    def log_metrics(self, denoised_images, clean_images):
-        metrics: Dict[str, Any] = self.metrics(denoised_images, clean_images)
+    def log_metrics(self, denoised_images, target):
+        metrics: Dict[str, Any] = self.metrics(denoised_images, target)
         for name, value in metrics.items():
             self.log(f"val_{name}", value)
