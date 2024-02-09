@@ -8,6 +8,7 @@ from torchmetrics import (
     PeakSignalNoiseRatio,
     StructuralSimilarityIndexMeasure,
 )
+from torchvision.transforms import transforms
 
 from common.configs.config import load_config
 from common.configs.dae_config import DAEConfig
@@ -142,8 +143,14 @@ def dncnn_train():
 
 
 def dncnn_test_model(path_to_model: Path, path_to_image: Path) -> None:
+    transformations = transforms.Compose(
+        [
+            transforms.Resize((512, 512)),
+            transforms.ToTensor(),
+        ]
+    )
     image = load_image(path_to_image)
-    dae_inference = DnCNNInference(path_to_model)
+    dae_inference = DnCNNInference(path_to_model, transformations)
     img_tensor = dae_inference.process_image(image)
     prediction = dae_inference.perform_inference(img_tensor)
     dae_inference.postprocess_and_display(image, prediction)
@@ -152,16 +159,16 @@ def dncnn_test_model(path_to_model: Path, path_to_image: Path) -> None:
 if __name__ == "__main__":
     # unet_train()
     
-    dae_train()
+    # dae_train()
 
     # dncnn_train()
 
-    # unet_test_model(
-    #     Path(
-    #         "lightning_logs/main_model/checkpoints/epoch=99-step=3200.ckpt"
-    #     ),
-    #     Path("data/LungSegmentation/CXR_png/CHNCXR_0250_0.png"),
-    # )
+    unet_test_model(
+        Path(
+            "lightning_logs/unet_model_v0/checkpoints/epoch=99-step=3200.ckpt"
+        ),
+        Path("data/LungSegmentation/CXR_png/CHNCXR_0250_0.png"),
+    )
 
     # dae_test_model(
     #     Path(

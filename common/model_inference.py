@@ -2,7 +2,6 @@ from abc import ABCMeta, abstractmethod
 from pathlib import Path
 from typing import Any
 
-from numpy import typing as npt
 import torch
 from PIL import Image
 from torchvision.transforms import transforms
@@ -10,16 +9,12 @@ from torchvision.transforms import transforms
 
 class ModelInference(metaclass=ABCMeta):
     def __init__(
-        self, path_to_model: Path, transformations: transforms = None
+        self, path_to_model: Path, transformations: transforms = None, device: str = "cpu"
     ) -> None:
         self.model = self.load_model(path_to_model)
-        self.device = torch.device(
-            "cuda" if torch.cuda.is_available() else "cpu"
-        )
+        self.device = device
         self.transform = (
-            transformations
-            if transformations
-            else transforms.Compose(
+            transformations if transformations else transforms.Compose(
                 [
                     transforms.Resize((256, 256)),
                     transforms.ToTensor(),
@@ -36,7 +31,7 @@ class ModelInference(metaclass=ABCMeta):
     def perform_inference(self, img_tensor) -> torch.Tensor:
         with torch.no_grad():
             prediction: torch.Tensor = self.model(img_tensor)
-        return prediction.cpu()
+        return prediction.to(self.device)
 
     @abstractmethod
     def load_model(self, path_to_model: Path) -> Any:

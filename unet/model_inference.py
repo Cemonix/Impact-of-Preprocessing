@@ -11,6 +11,7 @@ import plotly.graph_objs as go
 from plotly.subplots import make_subplots
 
 from common.model_inference import ModelInference
+from common.visualization import display_polygon_on_image
 from unet.model import UNetModel
 
 
@@ -25,8 +26,9 @@ class UnetInference(ModelInference):
         mask_uint8 = (mask_squeezed * 255).numpy().astype(np.uint8)
         polygons = self.__mask_to_polygons(mask_uint8)
         polygons = self.__scale_polygons(polygons, image.size, mask_uint8.shape)
-        self.__display_polygon_on_image(np.array(image), polygons)
+        display_polygon_on_image(image, polygons)
 
+    # Move to utils or data_manipulation
     @staticmethod
     def __mask_to_polygons(mask: npt.NDArray) -> List[Polygon]:
         contours, _ = cv2.findContours(mask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
@@ -44,37 +46,6 @@ class UnetInference(ModelInference):
                 polygons.append(polygon)
 
         return polygons
-
-    @staticmethod
-    def __display_polygon_on_image(img_array: npt.NDArray, polygons: List[Polygon]) -> None:
-        fig = make_subplots(rows=1, cols=2)
-
-        fig.add_trace(
-            go.Heatmap(z=img_array, colorscale='gray', showscale=False),
-            row=1, col=1
-        )
-        fig.add_trace(
-            go.Heatmap(z=img_array, colorscale='gray', showscale=False),
-            row=1, col=2
-        )
-
-        for polygon in polygons:
-            x, y = [], []
-            for point in polygon.vertices:
-                x.append(float(point.x))
-                y.append(float(point.y))
-
-            fig.add_trace(
-                go.Scatter(x=x, y=y, mode='lines', fill='toself'),
-                row=1, col=2
-            )
-
-        fig.update_xaxes(showgrid=False, zeroline=False, row=1, col=1)
-        fig.update_yaxes(showgrid=False, zeroline=False, row=1, col=1, scaleanchor="x", autorange="reversed")
-
-        fig.update_xaxes(showgrid=False, zeroline=False, row=1, col=2)
-        fig.update_yaxes(showgrid=False, zeroline=False, row=1, col=2, scaleanchor="x", autorange="reversed")
-        fig.show()
 
     @staticmethod
     def __scale_polygons(

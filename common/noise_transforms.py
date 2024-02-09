@@ -185,8 +185,7 @@ def test_noise_transforms(
             original_image.copy(), noise_type, params
         )
         compare_images(
-            original=original_image,
-            transformed=noised_image,
-            original_title="Original Image",
-            transformed_title=noise_type,
+            images=[original_image, noised_image],
+            titles=["Original image", "Noised image"],
+            images_per_column=2
         )
