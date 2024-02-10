@@ -16,10 +16,8 @@ from unet.model import UNetModel
 
 
 class UnetInference(ModelInference):
-    def load_model(self, path_to_model: Path) -> Any:
-        return UNetModel.load_from_checkpoint(path_to_model)
-
-    def postprocess_and_display(self, image: Image.Image, mask: torch.Tensor, threshold: float = 0.5) -> None:
+    def inference_display(self, image: Image.Image, threshold: float = 0.5) -> None:
+        mask = self.__pipeline(image)
         mask_prob = torch.sigmoid(mask)
         mask_binary = (mask_prob > threshold).float()
         mask_squeezed = mask_binary.squeeze(0).squeeze(0)
@@ -27,6 +25,11 @@ class UnetInference(ModelInference):
         polygons = self.__mask_to_polygons(mask_uint8)
         polygons = self.__scale_polygons(polygons, image.size, mask_uint8.shape)
         display_polygon_on_image(image, polygons)
+
+    def __pipeline(self, image: Image.Image) -> torch.Tensor:
+        image_tensor = self.process_image(image)
+        prediction = self.perform_inference(image_tensor)
+        return prediction
 
     # Move to utils or data_manipulation
     @staticmethod

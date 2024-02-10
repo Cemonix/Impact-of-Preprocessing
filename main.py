@@ -60,10 +60,8 @@ def unet_train():
 
 def unet_test_model(path_to_model: Path, path_to_image: Path) -> None:
     image = load_image(path_to_image)
-    unet_inference = UnetInference(path_to_model)
-    img_tensor = unet_inference.process_image(image)
-    prediction = unet_inference.perform_inference(img_tensor)
-    unet_inference.postprocess_and_display(image, prediction)
+    unet_inference = UnetInference(UNetModel, path_to_model)
+    unet_inference.inference_display(image)
 
 
 def dae_train():
@@ -100,12 +98,15 @@ def dae_train():
     trainer.fit(model, datamodule=datamodule)
 
 
-def dae_test_model(path_to_model: Path, path_to_image: Path) -> None:
+def dae_test_model(path_to_checkpoint: Path, path_to_image: Path) -> None:
+    noise_transform_config: Dict[str, Dict[str, Any]] = load_config(
+        Path("configs/noise_transforms_config.yaml")
+    )
     image = load_image(path_to_image)
-    dae_inference = DAEInference(path_to_model)
-    img_tensor = dae_inference.process_image(image)
-    prediction = dae_inference.perform_inference(img_tensor)
-    dae_inference.postprocess_and_display(image, prediction)
+    dae_inference = DAEInference(
+        model_type=DnCNNModel, path_to_checkpoint=path_to_checkpoint, noise_transform_config=noise_transform_config
+    )
+    dae_inference.inference_display(image, "gaussian_noise")
 
 
 def dncnn_train():
@@ -142,18 +143,22 @@ def dncnn_train():
     trainer.fit(model, datamodule=datamodule)
 
 
-def dncnn_test_model(path_to_model: Path, path_to_image: Path) -> None:
+def dncnn_test_model(path_to_checkpoint: Path, path_to_image: Path) -> None:
+    noise_transform_config: Dict[str, Dict[str, Any]] = load_config(
+        Path("configs/noise_transforms_config.yaml")
+    )
+    image = load_image(path_to_image)
     transformations = transforms.Compose(
         [
             transforms.Resize((512, 512)),
             transforms.ToTensor(),
         ]
     )
-    image = load_image(path_to_image)
-    dae_inference = DnCNNInference(path_to_model, transformations)
-    img_tensor = dae_inference.process_image(image)
-    prediction = dae_inference.perform_inference(img_tensor)
-    dae_inference.postprocess_and_display(image, prediction)
+    dncnn_inference = DnCNNInference(
+        model_type=DnCNNModel, path_to_checkpoint=path_to_checkpoint,
+        transformations=transformations, noise_transform_config=noise_transform_config
+    )
+    dncnn_inference.inference_display(image, "gaussian_noise")
 
 
 if __name__ == "__main__":
@@ -163,12 +168,12 @@ if __name__ == "__main__":
 
     # dncnn_train()
 
-    unet_test_model(
-        Path(
-            "lightning_logs/unet_model_v0/checkpoints/epoch=99-step=3200.ckpt"
-        ),
-        Path("data/LungSegmentation/CXR_png/CHNCXR_0250_0.png"),
-    )
+    # unet_test_model(
+    #     Path(
+    #         "lightning_logs/unet_model_v0/checkpoints/epoch=99-step=3200.ckpt"
+    #     ),
+    #     Path("data/LungSegmentation/CXR_png/CHNCXR_0250_0.png"),
+    # )
 
     # dae_test_model(
     #     Path(
@@ -177,11 +182,11 @@ if __name__ == "__main__":
     #     Path("data/LungSegmentation/CXR_png/CHNCXR_0001_0.png"),
     # )
 
-    # dncnn_test_model(
-    #     Path(
-    #         "lightning_logs/dncnn_model_v0_512/checkpoints/epoch=49-step=750.ckpt"
-    #     ),
-    #     Path("data/LungSegmentation/CXR_png/CHNCXR_0001_0.png"),
-    # )
+    dncnn_test_model(
+        Path(
+            "lightning_logs/dncnn_model_v0_512/checkpoints/epoch=49-step=750.ckpt"
+        ),
+        Path("data/LungSegmentation/CXR_png/CHNCXR_0001_0.png"),
+    )
 
     # TODO: Citovat dataset

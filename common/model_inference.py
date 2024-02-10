@@ -1,26 +1,25 @@
-from abc import ABCMeta, abstractmethod
 from pathlib import Path
-from typing import Any
+from typing import Type
 
 import torch
 from PIL import Image
+from pytorch_lightning import LightningModule
 from torchvision.transforms import transforms
 
 
-class ModelInference(metaclass=ABCMeta):
+class ModelInference:
     def __init__(
-        self, path_to_model: Path, transformations: transforms = None, device: str = "cpu"
+        self, model_type: Type[LightningModule], path_to_checkpoint: Path,
+        transformations: transforms = None, device: str = "cpu"
     ) -> None:
-        self.model = self.load_model(path_to_model)
         self.device = device
-        self.transform = (
-            transformations if transformations else transforms.Compose(
-                [
-                    transforms.Resize((256, 256)),
-                    transforms.ToTensor(),
-                ]
-            )
+        self.transform = transformations if transformations else transforms.Compose(
+            [
+                transforms.Resize((256, 256)),
+                transforms.ToTensor(),
+            ]
         )
+        self.model = self.__load_model(model_type, path_to_checkpoint)
         self.model.to(self.device)
         self.model.eval()
 
@@ -28,11 +27,21 @@ class ModelInference(metaclass=ABCMeta):
         img_tensor: torch.Tensor = self.transform(image).unsqueeze(0)
         return img_tensor.to(self.device)
 
-    def perform_inference(self, img_tensor) -> torch.Tensor:
+    def perform_inference(self, image_tensor: torch.Tensor) -> torch.Tensor:
         with torch.no_grad():
-            prediction: torch.Tensor = self.model(img_tensor)
+            prediction: torch.Tensor = self.model(image_tensor)
         return prediction.to(self.device)
 
-    @abstractmethod
-    def load_model(self, path_to_model: Path) -> Any:
-        pass
+    @staticmethod
+    def __load_model(model_type: Type[LightningModule], path_to_checkpoint: Path) -> LightningModule:
+        """
+        Loads a PyTorch Lightning model from a checkpoint file.
+
+        Parameters:
+        - model_class: The class of the model to load.
+        - checkpoint_path: The path to the checkpoint file.
+
+        Returns:
+        - An instance of the model loaded with weights from the checkpoint.
+        """
+        return model_type.load_from_checkpoint(path_to_checkpoint)

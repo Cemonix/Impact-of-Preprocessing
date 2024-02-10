@@ -5,16 +5,23 @@ import plotly.graph_objs as go
 from plotly.subplots import make_subplots
 from sympy import Polygon
 
+
 def compare_images(
     images: List[Image.Image],
     titles: List[str],
     images_per_column: int,
 ) -> None:
-    assert len(images) == len(titles), "Each image must have a corresponding title."
-    
+    assert len(titles) >= images_per_column, "Not enough titles!"
+
     # Calculate the number of rows needed for the given images per column
     rows = len(images) // images_per_column + (len(images) % images_per_column > 0)
-    
+
+    if len(titles) == images_per_column:
+        subplot_titles = []
+        for r in range(rows):
+            for title in titles:
+                subplot_titles.append(title if r == 0 else "")
+
     fig = make_subplots(rows=rows, cols=images_per_column, subplot_titles=titles)
 
     current_row, current_col = 1, 1
@@ -28,12 +35,13 @@ def compare_images(
             current_col = 1
             current_row += 1
 
-    fig.update_layout(height=1000, width=1800, title_text="Image Comparison")
+    fig.update_layout(height=700, width=1800, title_text="Image Comparison")
     fig.update_xaxes(showticklabels=False).update_yaxes(showticklabels=False)
     fig.show()
 
+
 def display_polygon_on_image(
-    images: List[Image.Image],
+    images: Image.Image | List[Image.Image],
     polygons: List[Polygon]
 ) -> None:
     if isinstance(images, Image.Image):
