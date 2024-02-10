@@ -1,5 +1,5 @@
 from pathlib import Path
-from typing import Type
+from typing import Type, Any, Dict
 
 import torch
 from PIL import Image
@@ -10,7 +10,7 @@ from torchvision.transforms import transforms
 class ModelInference:
     def __init__(
         self, model_type: Type[LightningModule], path_to_checkpoint: Path,
-        transformations: transforms = None, device: str = "cpu"
+        transformations: transforms = None, device: str = "cpu", **kwargs
     ) -> None:
         self.device = device
         self.transform = transformations if transformations else transforms.Compose(
@@ -19,7 +19,7 @@ class ModelInference:
                 transforms.ToTensor(),
             ]
         )
-        self.model = self.__load_model(model_type, path_to_checkpoint)
+        self.model = self.__load_model(model_type, path_to_checkpoint, **kwargs)
         self.model.to(self.device)
         self.model.eval()
 
@@ -33,7 +33,9 @@ class ModelInference:
         return prediction.to(self.device)
 
     @staticmethod
-    def __load_model(model_type: Type[LightningModule], path_to_checkpoint: Path) -> LightningModule:
+    def __load_model(
+        model_type: Type[LightningModule], path_to_checkpoint: Path, **kwargs
+    ) -> LightningModule:
         """
         Loads a PyTorch Lightning model from a checkpoint file.
 
@@ -44,4 +46,4 @@ class ModelInference:
         Returns:
         - An instance of the model loaded with weights from the checkpoint.
         """
-        return model_type.load_from_checkpoint(path_to_checkpoint)
+        return model_type.load_from_checkpoint(checkpoint_path=path_to_checkpoint, **kwargs)

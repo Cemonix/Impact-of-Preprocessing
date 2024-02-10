@@ -6,23 +6,20 @@ import torch.optim as optim
 from pytorch_lightning import LightningModule
 from torchmetrics import MeanSquaredError, MetricCollection
 
-from preprocessing.neural_network_methods.DnCNN.architecture.dncnn import (
-    DnCNN,
-)
 
-
-class DnCNNModel(LightningModule):
+class PreprocessingModel(LightningModule):
     def __init__(
         self,
+        architecture_type: LightningModule,
         n_channels: int = 1,
         learning_rate: float = 1e-4,
         metrics: MetricCollection = None,
     ) -> None:
-        super(DnCNNModel, self).__init__()
+        super(PreprocessingModel, self).__init__()
         self.learning_rate = learning_rate
         self.metrics = metrics or MetricCollection({"MSE": MeanSquaredError()})
         self.save_hyperparameters(ignore=["metrics"])
-        self.model = DnCNN(n_channels)
+        self.model = architecture_type(n_channels)
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         return self.model(x)

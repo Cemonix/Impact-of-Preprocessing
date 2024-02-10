@@ -1,4 +1,4 @@
-from typing import Dict, Any, List
+from typing import Any, Dict, List, Tuple
 
 import numpy as np
 import torch
@@ -10,7 +10,7 @@ from common.noise_transforms import NoiseTransformHandler
 from common.visualization import compare_images
 
 
-class DAEInference(ModelInference):
+class PreprocessingInference(ModelInference):
     def __init__(
         self, noise_transform_config: Dict[str, Dict[str, Any]], **kwargs
     ) -> None:
@@ -18,10 +18,7 @@ class DAEInference(ModelInference):
         self.noise_transform_config = noise_transform_config
         self.noise_transform_handler = NoiseTransformHandler()
 
-    def inference_display(self, images: Image.Image | List[Image.Image], noise_type: str) -> None:
-        if isinstance(images, Image.Image):
-            images = [images]
-
+    def inference_display(self, images: List[Image.Image], noise_type: str) -> None:
         images_for_display: List[Image.Image] = []
         for image in images:
             img = self.transform(image.copy())
@@ -37,7 +34,7 @@ class DAEInference(ModelInference):
             images_for_display, ["Original image", "Noised image", "Prediction"], 3
         )
 
-    def __pipeline(self, image: Image.Image, noise_type: str):
+    def __pipeline(self, image: Image.Image, noise_type: str) -> Tuple[torch.Tensor, torch.Tensor]:
         noised_tensor = self.__preprocess_image(image, noise_type)
         prediction = self.perform_inference(noised_tensor)
         return noised_tensor, prediction

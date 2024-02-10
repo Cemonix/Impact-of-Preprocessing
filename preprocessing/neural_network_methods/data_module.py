@@ -5,10 +5,10 @@ from torch.utils.data import random_split
 from torchvision import transforms
 
 from common.data_module import DataModule
-from preprocessing.neural_network_methods.DAE.dataset import DAEDataset
+from preprocessing.neural_network_methods.dataset import PreprocessingDataset
 
 
-class DAEDataModule(DataModule):
+class PreprocessingDataModule(DataModule):
     def __init__(
         self,
         image_dir: Path,
@@ -27,12 +27,12 @@ class DAEDataModule(DataModule):
         if self.transform is None:
             self.transform = transforms.Compose(
                 [
-                    transforms.Resize((256, 256)),
+                    transforms.Resize((512, 512)),
                     transforms.ToTensor(),
                 ]
             )
 
-        full_dataset = DAEDataset(
+        full_dataset = PreprocessingDataset(
             self.image_dir, self.transform, self.noise_transform_config
         )
         train_size = int(self.train_ratio * len(full_dataset))

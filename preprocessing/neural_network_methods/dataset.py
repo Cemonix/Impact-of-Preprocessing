@@ -11,7 +11,7 @@ from torchvision import transforms
 from common.noise_transforms import NoiseTransformHandler
 
 
-class DnCNNDataset(Dataset):
+class PreprocessingDataset(Dataset):
     def __init__(
         self,
         image_dir: Path,
@@ -32,6 +32,7 @@ class DnCNNDataset(Dataset):
         img_path = os.path.join(self.image_dir, self.images[idx])
         image = Image.open(img_path).convert("L")
 
+        # FIXME
         # noise_types = list(self.noise_transform_config.keys())
         # selected_noise_type = random.choice(noise_types)
         selected_noise_type = 'gaussian_noise'
