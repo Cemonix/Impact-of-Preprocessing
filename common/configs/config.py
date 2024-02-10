@@ -3,13 +3,13 @@ from typing import Any, Dict
 
 import yaml
 
-from common.configs.dae_config import DAEConfig
+from common.configs.preprocessing_net_config import PreprocessingNetConfig
 from common.configs.unet_config import UnetConfig
 
 
-def load_config(config_path: Path) -> DAEConfig | UnetConfig | Dict[str, Any]:
-    if "dae" in config_path.stem:
-        config_type = DAEConfig
+def load_config(config_path: Path) -> PreprocessingNetConfig | UnetConfig | Dict[str, Any]:
+    if "preprocessing_net" in config_path.stem:
+        config_type = PreprocessingNetConfig
     elif "unet" in config_path.stem:
         config_type = UnetConfig
     elif "noise" in config_path.stem:
