@@ -16,6 +16,7 @@ from unet.model import UNetModel
 
 
 class UnetInference(ModelInference):
+    # TODO: Refactor to multiple images
     def inference_display(self, image: Image.Image, threshold: float = 0.5) -> None:
         mask = self.__pipeline(image)
         mask_prob = torch.sigmoid(mask)
