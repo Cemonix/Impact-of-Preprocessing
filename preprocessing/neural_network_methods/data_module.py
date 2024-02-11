@@ -24,14 +24,6 @@ class PreprocessingDataModule(DataModule):
         self.noise_transform_config = noise_transform_config
 
     def setup(self, stage: Optional[str] = None) -> None:
-        if self.transform is None:
-            self.transform = transforms.Compose(
-                [
-                    transforms.Resize((512, 512)),
-                    transforms.ToTensor(),
-                ]
-            )
-
         full_dataset = PreprocessingDataset(
             self.image_dir, self.transform, self.noise_transform_config
         )

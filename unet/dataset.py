@@ -48,8 +48,7 @@ class LungSegmentationDataset(Dataset):
         image = Image.open(img_path).convert("L")
         mask = Image.open(mask_path).convert("L")
 
-        if self.transform:
-            image = self.transform(image)
-            mask = self.transform(mask)
+        image = self.transform(image)
+        mask = self.transform(mask)
 
         return image, mask

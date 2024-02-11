@@ -15,14 +15,20 @@ class DataModule(ABC, LightningDataModule):
         batch_size: int = 4,
         num_of_workers: int = 8,
         train_ratio: float = 0.8,
-        transform: Optional[transforms.Compose] = None,
+        transform: Optional[transforms.Compose] | None = None,
     ) -> None:
         super().__init__()
+        assert not image_dir.exists() and not image_dir.is_dir(), "Image directory does not exist"
         self.image_dir = image_dir
         self.batch_size = batch_size
         self.num_of_workers = num_of_workers
         self.train_ratio = train_ratio
-        self.transform = transform
+        self.transform = transform if transform is not None else transforms.Compose(
+            [
+                transforms.Resize((256, 256)),
+                transforms.ToTensor(),
+            ]
+        )
 
         self.train = None
         self.val = None

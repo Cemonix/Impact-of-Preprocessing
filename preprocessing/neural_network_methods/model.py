@@ -36,12 +36,11 @@ class PreprocessingModel(LightningModule):
         return loss
 
     def validation_step(self, batch: Any, batch_idx: int) -> None:
-        target, noised_image = batch
+        noised_image, target = batch
         denoised_images = self(noised_image)
 
         loss = F.mse_loss(denoised_images, target)
         self.log("val_loss", loss, on_epoch=True, prog_bar=True, logger=True)
-
         self.log_metrics(denoised_images, target)
 
     def log_metrics(self, denoised_images, target):

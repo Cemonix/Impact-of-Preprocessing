@@ -16,22 +16,15 @@ class LungSegmentationDataModule(DataModule):
         batch_size: int = 4,
         num_of_workers: int = 8,
         train_ratio: float = 0.8,
-        transform: Optional[transforms.Compose] = None,
+        transform: Optional[transforms.Compose] | None = None,
     ) -> None:
         super().__init__(
             image_dir, batch_size, num_of_workers, train_ratio, transform
         )
+        assert not mask_dir.exists() and not mask_dir.is_dir(), "Mask directory does not exist"
         self.mask_dir = mask_dir
 
     def setup(self, stage: Optional[str] = None) -> None:
-        if self.transform is None:
-            self.transform = transforms.Compose(
-                [
-                    transforms.Resize((256, 256)),
-                    transforms.ToTensor(),
-                ]
-            )
-
         # Dataset creation
         full_dataset = LungSegmentationDataset(
             self.image_dir, self.mask_dir, self.transform

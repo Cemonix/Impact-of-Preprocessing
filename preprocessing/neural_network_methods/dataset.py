@@ -32,18 +32,18 @@ class PreprocessingDataset(Dataset):
         img_path = os.path.join(self.image_dir, self.images[idx])
         image = Image.open(img_path).convert("L")
 
-        # FIXME
-        # noise_types = list(self.noise_transform_config.keys())
-        # selected_noise_type = random.choice(noise_types)
+        # TODO: Set type as param or prop - can change?
         selected_noise_type = 'gaussian_noise'
-        params = self.noise_transform_config[selected_noise_type]
+        params = self.noise_transform_config[selected_noise_type].copy()
+
+        if isinstance(params['std'], list):
+            params['std'] = random.choice(params['std'])
 
         noised_image = self.noise_transform_handler.apply_noise_transform(
             np.array(image.copy()), selected_noise_type, params
         )
 
-        if self.transform:
-            image = self.transform(image)
-            noised_image = self.transform(noised_image)
+        image = self.transform(image)
+        noised_image = self.transform(noised_image)
 
-        return image, noised_image
+        return noised_image, image
