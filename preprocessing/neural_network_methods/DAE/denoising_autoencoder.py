@@ -20,8 +20,9 @@ class DeconvBlock(LightningModule):
     def __init__(self, in_channels: int, out_channels: int) -> None:
         super(DeconvBlock, self).__init__()
         self.deconv = nn.Sequential(
-            nn.Upsample(scale_factor=2, mode="bilinear", align_corners=True),
-            nn.Conv2d(in_channels, out_channels, kernel_size=3, padding=1),
+            # nn.Upsample(scale_factor=2, mode="bilinear", align_corners=True),
+            # nn.Conv2d(in_channels, out_channels, kernel_size=3, padding=1),
+            nn.ConvTranspose2d(in_channels, out_channels, kernel_size=3, stride=2, padding=1, output_padding=1),
             nn.BatchNorm2d(out_channels),
             nn.ReLU(inplace=True),
         )
@@ -66,6 +67,8 @@ class DenoisingAutoencoder(LightningModule):
         )
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
-        x = self.encoder(x)
-        x = self.decoder(x)
-        return x
+        predicted_noise = self.encoder(x)
+        predicted_noise = self.decoder(predicted_noise)
+        denoised_image = x - predicted_noise
+        # TODO: return noise as well
+        return denoised_image

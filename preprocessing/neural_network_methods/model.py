@@ -29,15 +29,15 @@ class PreprocessingModel(LightningModule):
         return {"optimizer": optimizer}
 
     def training_step(self, batch: Any, batch_idx: int) -> torch.Tensor:
-        target, noised_image = batch
-        denoised_images = self(noised_image)
+        target, noised_images = batch
+        denoised_images = self(noised_images)
         loss = F.mse_loss(denoised_images, target)
         self.log("train_loss", loss, on_step=True, prog_bar=True, logger=True)
         return loss
 
     def validation_step(self, batch: Any, batch_idx: int) -> None:
-        noised_image, target = batch
-        denoised_images = self(noised_image)
+        noised_images, target = batch
+        denoised_images = self(noised_images)
 
         loss = F.mse_loss(denoised_images, target)
         self.log("val_loss", loss, on_epoch=True, prog_bar=True, logger=True)

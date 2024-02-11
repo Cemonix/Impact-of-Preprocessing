@@ -18,6 +18,6 @@ class DnCNN(LightningModule):
         self.dncnn = nn.Sequential(*layers)
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
-        out = self.dncnn(x)
-        return x - out
+        predicted_noise = self.dncnn(x)
+        return x - predicted_noise
     
