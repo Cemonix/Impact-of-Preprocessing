@@ -18,7 +18,7 @@ class DataModule(ABC, LightningDataModule):
         transform: Optional[transforms.Compose] | None = None,
     ) -> None:
         super().__init__()
-        assert not image_dir.exists() and not image_dir.is_dir(), "Image directory does not exist"
+        assert image_dir.exists() and image_dir.is_dir(), "Image directory does not exist"
         self.image_dir = image_dir
         self.batch_size = batch_size
         self.num_of_workers = num_of_workers

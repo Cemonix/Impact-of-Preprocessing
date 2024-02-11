@@ -21,7 +21,7 @@ class LungSegmentationDataModule(DataModule):
         super().__init__(
             image_dir, batch_size, num_of_workers, train_ratio, transform
         )
-        assert not mask_dir.exists() and not mask_dir.is_dir(), "Mask directory does not exist"
+        assert mask_dir.exists() and mask_dir.is_dir(), "Mask directory does not exist"
         self.mask_dir = mask_dir
 
     def setup(self, stage: Optional[str] = None) -> None:

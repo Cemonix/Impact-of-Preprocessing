@@ -40,6 +40,7 @@ class PreprocessingInference(ModelInference):
         return noised_tensor, prediction
 
     def __preprocess_image(self, image: Image.Image, noise_type: str) -> torch.Tensor:
+        # TODO: If noise type params is gaussian it has std as list - choose level of noise
         noise_type_params = self.noise_transform_config[noise_type]
         noised_image = self.noise_transform_handler.apply_noise_transform(
             np.array(image), noise_type, noise_type_params
