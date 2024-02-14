@@ -74,30 +74,33 @@ class DenoisingAutoencoder(LightningModule):
     def __init__(self, n_channels: int = 1) -> None:
         super(DenoisingAutoencoder, self).__init__()
         self.encoder = nn.Sequential(
-            nn.Conv2d(in_channels=n_channels, out_channels=16, kernel_size=3, stride=2, padding=1),
+            nn.Conv2d(n_channels, 16, kernel_size=3, padding=1),
             nn.ReLU(),
-            nn.Conv2d(in_channels=16, out_channels=32, kernel_size=3, stride=2, padding=1),
+            nn.MaxPool2d(2),
+            nn.Conv2d(16, 32, kernel_size=3, padding=1),
             nn.ReLU(),
-            nn.Conv2d(in_channels=32, out_channels=64, kernel_size=3, stride=2, padding=1),
+            nn.MaxPool2d(2),
+            nn.Conv2d(32, 64, kernel_size=3, padding=1),
             nn.ReLU(),
+            nn.MaxPool2d(2),
+            nn.Conv2d(64, 128, kernel_size=3, padding=1),
+            nn.ReLU(),
+            nn.MaxPool2d(2)
         )
 
         self.decoder = nn.Sequential(
-            nn.ConvTranspose2d(
-                in_channels=64, out_channels=32, kernel_size=3, stride=2, padding=1, output_padding=1
-            ),
+            nn.ConvTranspose2d(128, 64, kernel_size=2, stride=2),
             nn.ReLU(),
-            nn.ConvTranspose2d(
-                in_channels=32, out_channels=16, kernel_size=3, stride=2, padding=1, output_padding=1
-            ),
+            nn.ConvTranspose2d(64, 32, kernel_size=2, stride=2),
             nn.ReLU(),
-            nn.ConvTranspose2d(
-                in_channels=16, out_channels=n_channels, kernel_size=3, stride=2, padding=1, output_padding=1
-            ),
-            nn.Sigmoid(),
+            nn.ConvTranspose2d(32, 16, kernel_size=2, stride=2),
+            nn.ReLU(),
+            nn.ConvTranspose2d(16, n_channels, kernel_size=2, stride=2),
+            nn.ReLU(),
+            nn.Sigmoid()
         )
 
     def forward(self, x):
-        x = self.encoder(x)
-        x = self.decoder(x)
-        return x
+        noise = self.encoder(x)
+        noise = self.decoder(noise)
+        return x - noise

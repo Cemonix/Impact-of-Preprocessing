@@ -52,4 +52,11 @@ if __name__ == "__main__":
     noise_type = 'gaussian_noise'
     test_preprocessing_model(image, preprocessing_checkpoint_path, transformations, model_params, noise_type)
 
+    # TODO: Pøedìlat pùvodní denoising autoencoder na aktuální
+    # TODO: Opravit preprocessing dataset a nastavit správnì zašumìní snímkù
+    # TODO: Implementovat denoising autoencoder jako UNet - skip connections
+    # TODO: Implementovat pipeline preprocessing -> UNet -> meøení vlivu
+    # TODO: Vyzkoušet použití klasických metod
+    # TODO: Vyzkoušet vliv augmentace dat
+
     # TODO: Citovat dataset
