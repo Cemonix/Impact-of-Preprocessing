@@ -25,7 +25,7 @@ def compare_images(
     fig = make_subplots(rows=rows, cols=images_per_column, subplot_titles=titles)
 
     current_row, current_col = 1, 1
-    for _, img in enumerate(images):
+    for img in images:
         fig.add_trace(
             px.imshow(img, binary_string=True, color_continuous_scale="gray").data[0],
             row=current_row, col=current_col
