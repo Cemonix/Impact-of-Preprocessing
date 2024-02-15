@@ -27,17 +27,18 @@ if __name__ == "__main__":
     # train_preprocessing_model(DenoisingAutoencoder, metrics)
     # train_preprocessing_model(DnCNN, metrics)
 
-    image = load_image(Path("data/LungSegmentation/CXR_png/CHNCXR_0001_0.png"))
+    image = load_image(Path("data/LungSegmentation/CXR_png/CHNCXR_0005_0.png"))
+    target = load_image(Path("data/LungSegmentation/masks/CHNCXR_0005_0_mask.png"))
 
     # Unet test
-    # transformations = transforms.Compose(
-    #     [
-    #         transforms.Resize((256, 256)),
-    #         transforms.ToTensor(),
-    #     ]
-    # )
-    # unet_checkpoint_path = Path("lightning_logs/unet_model_v0/checkpoints/epoch=99-step=3200.ckpt")
-    # test_unet_model(unet_checkpoint_path, image, transformations)
+    transformations = transforms.Compose(
+        [
+            transforms.Resize((256, 256)),
+            transforms.ToTensor(),
+        ]
+    )
+    unet_checkpoint_path = Path("lightning_logs/unet_model_v0/checkpoints/epoch=99-step=3200.ckpt")
+    test_unet_model(unet_checkpoint_path, image, target, transformations)
 
     # Preprocessing test
     transformations = transforms.Compose(

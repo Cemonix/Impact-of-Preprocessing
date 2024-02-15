@@ -14,7 +14,7 @@ class PreprocessingDataLoaderConfig(BaseModel):
     batch_size: int
     num_workers: int
     train_ratio: float
-    noise_types: List[float]
+    noise_types: List[str]
 
 
 class PreprocessingTrainingConfig(BaseModel):

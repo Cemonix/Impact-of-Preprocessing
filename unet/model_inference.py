@@ -1,23 +1,19 @@
-from pathlib import Path
-from typing import Any, List, Tuple
+from typing import List, Tuple
 
 import cv2
 import numpy as np
 from numpy import typing as npt
 import torch
 from sympy import Point, Polygon
-from PIL import Image
-import plotly.graph_objs as go
-from plotly.subplots import make_subplots
+from PIL import Image, ImageDraw
 
 from common.model_inference import ModelInference
-from common.visualization import display_polygon_on_image
-from unet.model import UNetModel
+from common.visualization import compare_images
 
 
 class UnetInference(ModelInference):
     # TODO: Refactor to multiple images
-    def inference_display(self, image: Image.Image, threshold: float = 0.5) -> None:
+    def inference_display(self, image: Image.Image, target: Image.Image, threshold: float = 0.5) -> None:
         mask = self.__pipeline(image)
         mask_prob = torch.sigmoid(mask)
         mask_binary = (mask_prob > threshold).float()
@@ -25,7 +21,15 @@ class UnetInference(ModelInference):
         mask_uint8 = (mask_squeezed * 255).numpy().astype(np.uint8)
         polygons = self.__mask_to_polygons(mask_uint8)
         polygons = self.__scale_polygons(polygons, image.size, mask_uint8.shape)
-        display_polygon_on_image(image, polygons)
+        image_with_polygons = self.__draw_polygons_on_image(image, polygons)
+
+        target_polygons = self.__mask_to_polygons(np.array(target))
+        target_with_polygons = self.__draw_polygons_on_image(image, target_polygons)
+        compare_images(
+            [image, target_with_polygons, image_with_polygons],
+            ["Original image", "Target", "Prediction"],
+            zoom = False
+        )
 
     def __pipeline(self, image: Image.Image) -> torch.Tensor:
         image_tensor = self.process_image(image)
@@ -59,12 +63,12 @@ class UnetInference(ModelInference):
         Scale the coordinates of polygons from mask size to match the image size.
 
         Parameters:
-        - polygons: List of SymPy Polygon objects.
+        - polygons: List of SymPy Polygons.
         - mask_shape: Tuple of (height, width) representing the size of the mask.
         - image_size: Tuple of (width, height) representing the target image size.
 
         Returns:
-        - List of scaled SymPy Polygon objects.
+        - List of scaled SymPy Polygons.
         """
         img_width, img_height = image_size
         mask_height, mask_width = mask_size
@@ -77,3 +81,32 @@ class UnetInference(ModelInference):
             scaled_polygons.append(Polygon(*scaled_vertices))
 
         return scaled_polygons
+
+    @staticmethod
+    def __draw_polygons_on_image(
+        image: Image.Image, polygons: List[Polygon],
+        fill_color: Tuple[int] = (0, 255, 0, 128)
+    ) -> Image.Image:
+        """
+        Draws polygons on an image with transparency.
+
+        Parameters:
+        - image: Image on which polygons will be drawn.
+        - polygons: List of SymPy polygons.
+        - fill_color: List of fill colors with an alpha value for transparency
+            (default is semi-transparent red and green).
+
+        Returns:
+        - Image with polygons.
+        """
+        if image.mode != 'RGBA':
+            image = image.convert('RGBA')
+
+        overlay = Image.new('RGBA', image.size, (255, 255, 255, 0))
+        draw_overlay = ImageDraw.Draw(overlay)
+
+        for polygon in polygons:
+            vertices = [(float(p.x), float(p.y)) for p in polygon.vertices]
+            draw_overlay.polygon(vertices, fill=fill_color)
+
+        return Image.alpha_composite(image, overlay)

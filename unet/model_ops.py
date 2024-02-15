@@ -39,13 +39,16 @@ def train_unet_model(metrics: MetricCollection | None = None) -> None:
 
 # TODO: Send target
 def test_unet_model(
-    path_to_checkpoint: Path, images: Image.Image | List[Image.Image], transformations: transforms.Compose | None
+    path_to_checkpoint: Path, images: Image.Image | List[Image.Image],
+    targets: Image.Image | List[Image.Image], transformations: transforms.Compose | None
 ) -> None:
     if isinstance(images, Image.Image):
         images = [images]
+    if isinstance(targets, Image.Image):
+        targets = [targets]
 
     # TODO: Send list of images to inference
     unet_inference = UnetInference(
         model_type=UNetModel, path_to_checkpoint=path_to_checkpoint, transformations=transformations
     )
-    unet_inference.inference_display(images[0])
+    unet_inference.inference_display(images[0], targets[0])

@@ -1,74 +1,58 @@
-from typing import List
+from typing import List, Tuple
 from PIL import Image
-import plotly.express as px
-import plotly.graph_objs as go
-from plotly.subplots import make_subplots
+import matplotlib.pyplot as plt
+import matplotlib.patches as patches
+from matplotlib.patches import Polygon as MplPolygon
 from sympy import Polygon
 
 
 def compare_images(
     images: List[Image.Image],
     titles: List[str],
-    images_per_column: int,
+    images_per_column: int = 3,
+    rect_coords: Tuple[int] | None = None,
+    zoom: bool = True
 ) -> None:
-    assert len(titles) >= images_per_column, "Not enough titles!"
+    assert len(images) >= len(titles), "More titles than images!"
+    assert len(titles) >= images_per_column, "Not enough titles for the given images per column!"
+
+    image_x, image_y = images[0].size
+    if rect_coords is None and zoom:
+        rect_coords = (image_x * 0.25, image_y * 0.25, image_x * 0.05, image_y * 0.05)
 
     # Calculate the number of rows needed for the given images per column
     rows = len(images) // images_per_column + (len(images) % images_per_column > 0)
 
-    if len(titles) == images_per_column:
-        subplot_titles = []
-        for r in range(rows):
-            for title in titles:
-                subplot_titles.append(title if r == 0 else "")
-
-    fig = make_subplots(rows=rows, cols=images_per_column, subplot_titles=titles)
-
-    current_row, current_col = 1, 1
-    for img in images:
-        fig.add_trace(
-            px.imshow(img, binary_string=True, color_continuous_scale="gray").data[0],
-            row=current_row, col=current_col
-        )
-        current_col += 1
-        if current_col > images_per_column:
-            current_col = 1
-            current_row += 1
-
-    fig.update_layout(height=700, width=1800, title_text="Image Comparison")
-    fig.update_xaxes(showticklabels=False).update_yaxes(showticklabels=False)
-    fig.show()
-
-
-def display_polygon_on_image(
-    images: Image.Image | List[Image.Image],
-    polygons: List[Polygon]
-) -> None:
-    if isinstance(images, Image.Image):
-        images = [images]
-
-    fig = make_subplots(rows=len(images), cols=2, subplot_titles=["Image", "Image with prediction"])
+    fig, axes = plt.subplots(rows, images_per_column, figsize=(18, 7 * rows))
+    
     for idx, img in enumerate(images):
-        fig.add_trace(
-            px.imshow(img, binary_string=True, color_continuous_scale="gray").data[0],
-            row=idx+1, col=1
-        )
-        fig.add_trace(
-            px.imshow(img, binary_string=True, color_continuous_scale="gray").data[0],
-            row=idx+1, col=2
-        )
-        for polygon in polygons:
-            x, y = [], []
-            for point in polygon.vertices:
-                x.append(float(point.x))
-                y.append(float(point.y))
+        ax = axes[idx]
+        ax.imshow(img, cmap="gray")
+        ax.axis("off")
+        if idx < len(titles):
+            ax.set_title(titles[idx])
 
-            fig.add_trace(
-                go.Scatter(x=x, y=y, mode='lines', fill='toself'),
-                row=idx+1, col=2
+        if zoom:
+            rect = patches.Rectangle(
+                (rect_coords[0], rect_coords[1]), 
+                rect_coords[2], rect_coords[3], 
+                linewidth=2, edgecolor='r', facecolor="none"
             )
+            ax.add_patch(rect)
 
-    fig.update_layout(height=800, width=1600, showlegend=False)
-    fig.update_xaxes(showticklabels=False).update_yaxes(showticklabels=False)
-    fig.show()
+            cropped_image = img.crop((
+                rect_coords[0], rect_coords[1], 
+                rect_coords[0] + rect_coords[2], 
+                rect_coords[1] + rect_coords[3]
+            ))
+
+            ax_inset = ax.inset_axes([0.7, 0.0, 0.3, 0.3])
+            ax_inset.imshow(cropped_image, cmap="gray")
+            ax_inset.axis("off")
+    
+    for ax in axes[len(images):]:
+        ax.axis("off")
+
+    plt.tight_layout()
+    plt.show()
     
