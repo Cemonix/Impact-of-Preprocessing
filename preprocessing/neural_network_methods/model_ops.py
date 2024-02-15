@@ -29,6 +29,7 @@ def train_preprocessing_model(architecture_type: LightningModule, metrics: Metri
     datamodule = PreprocessingDataModule(
         image_dir=preprocessing_config.dataloader.image_dir,
         noise_transform_config=noise_transform_config,
+        noise_types=preprocessing_config.dataloader.noise_types,
         batch_size=preprocessing_config.dataloader.batch_size,
         num_of_workers=preprocessing_config.dataloader.num_workers,
         train_ratio=preprocessing_config.dataloader.train_ratio,
@@ -53,6 +54,6 @@ def test_preprocessing_model(
     )
     dncnn_inference = PreprocessingInference(
         model_type=PreprocessingModel, path_to_checkpoint=path_to_checkpoint, transformations=transformations,
-        noise_transform_config=noise_transform_config, **model_params
+        noise_transform_config=noise_transform_config, noise_type=noise_type, **model_params
     )
-    dncnn_inference.inference_display(images, noise_type)
+    dncnn_inference.inference_display(images)

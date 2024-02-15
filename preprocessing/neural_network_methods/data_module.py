@@ -1,5 +1,5 @@
 from pathlib import Path
-from typing import Any, Dict, Optional
+from typing import Any, Dict, List, Optional
 
 from torch.utils.data import random_split
 from torchvision import transforms
@@ -13,6 +13,7 @@ class PreprocessingDataModule(DataModule):
         self,
         image_dir: Path,
         noise_transform_config: Dict[str, Dict[str, Any]],
+        noise_types: List[str],
         batch_size: int = 4,
         num_of_workers: int = 8,
         train_ratio: float = 0.8,
@@ -22,10 +23,11 @@ class PreprocessingDataModule(DataModule):
             image_dir, batch_size, num_of_workers, train_ratio, transform
         )
         self.noise_transform_config = noise_transform_config
+        self.noise_types = noise_types
 
     def setup(self, stage: Optional[str] = None) -> None:
         full_dataset = PreprocessingDataset(
-            self.image_dir, self.transform, self.noise_transform_config
+            self.image_dir, self.transform, self.noise_transform_config, self.noise_types
         )
         train_size = int(self.train_ratio * len(full_dataset))
         test_size = len(full_dataset) - train_size

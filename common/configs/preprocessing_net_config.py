@@ -1,4 +1,5 @@
 from pathlib import Path
+from typing import List
 
 from pydantic import BaseModel
 
@@ -13,6 +14,7 @@ class PreprocessingDataLoaderConfig(BaseModel):
     batch_size: int
     num_workers: int
     train_ratio: float
+    noise_types: List[float]
 
 
 class PreprocessingTrainingConfig(BaseModel):

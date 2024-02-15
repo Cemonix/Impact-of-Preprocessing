@@ -1,13 +1,21 @@
 gaussian_noise:
   mean: 0
-  std: [10, 20, 30, 50, 70]
+  std:
+    min: 50
+    max: 500
 
 speckle_noise:
-  intensity: 0.05
+  intensity_min:
+    min: 0.05
+    max: 0.95
 
 salt_and_pepper_noise:
-  salt_prob: 0.02
-  pepper_prob: 0.02
+  salt_prob_min:
+    min: 0.02
+    max: 0.75
+  pepper_prob_min:
+    min: 0.02
+    max: 0.75
 
 poisson_noise: {}
 
