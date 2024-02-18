@@ -62,7 +62,7 @@ class UNet(LightningModule):
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         # Downsampling
         skip_connections = []
-        for down in self.downs[:-1]:
+        for down in self.downs[:-1]: # type: ignore
             x = down(x)
             skip_connections.append(x)
             x = self.pool(x)

@@ -13,7 +13,7 @@ class PreprocessingModel(LightningModule):
         architecture_type: LightningModule,
         n_channels: int = 1,
         learning_rate: float = 1e-4,
-        metrics: MetricCollection = None,
+        metrics: MetricCollection | None = None,
     ) -> None:
         super(PreprocessingModel, self).__init__()
         self.learning_rate = learning_rate

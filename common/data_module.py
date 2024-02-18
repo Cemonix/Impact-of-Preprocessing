@@ -47,6 +47,9 @@ class DataModule(ABC, LightningDataModule):
         pass
 
     def train_dataloader(self) -> DataLoader:
+        if self.train is None:
+            raise Exception("Setup has to be called before creating dataloader.")
+        
         return DataLoader(
             self.train,
             batch_size=self.batch_size,
@@ -55,6 +58,9 @@ class DataModule(ABC, LightningDataModule):
         )
 
     def val_dataloader(self) -> DataLoader:
+        if self.val is None:
+            raise Exception("Setup has to be called before creating dataloader.")
+        
         return DataLoader(
             self.val,
             batch_size=self.batch_size,
@@ -62,6 +68,9 @@ class DataModule(ABC, LightningDataModule):
         )
 
     def test_dataloader(self) -> DataLoader:
+        if self.test is None:
+            raise Exception("Setup has to be called before creating dataloader.")
+        
         return DataLoader(
             self.test,
             batch_size=self.batch_size,

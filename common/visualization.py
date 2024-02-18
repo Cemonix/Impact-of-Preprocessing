@@ -10,14 +10,14 @@ def compare_images(
     images: List[Image.Image],
     titles: List[str],
     images_per_column: int = 3,
-    rect_coords: Tuple[int] | None = None,
+    rect_coords: Tuple[float, float, float, float] | None = None,
     zoom: bool = True
 ) -> None:
     assert len(images) >= len(titles), "More titles than images!"
     assert len(titles) >= images_per_column, "Not enough titles for the given images per column!"
 
     image_x, image_y = images[0].size
-    if rect_coords is None and zoom:
+    if rect_coords is None:
         rect_coords = (image_x * 0.25, image_y * 0.25, image_x * 0.05, image_y * 0.05)
 
     # Calculate the number of rows needed for the given images per column
@@ -44,7 +44,7 @@ def compare_images(
                 rect_coords[0], rect_coords[1], 
                 rect_coords[0] + rect_coords[2], 
                 rect_coords[1] + rect_coords[3]
-            ))
+            )) # type: ignore
 
             ax_inset = ax.inset_axes([0.7, 0.0, 0.3, 0.3])
             ax_inset.imshow(cropped_image, cmap="gray")

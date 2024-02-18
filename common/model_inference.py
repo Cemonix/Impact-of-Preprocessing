@@ -10,7 +10,7 @@ from torchvision.transforms import transforms
 class ModelInference:
     def __init__(
         self, model_type: Type[LightningModule], path_to_checkpoint: Path,
-        transformations: transforms = None, device: str = "cpu", **kwargs
+        transformations: transforms.Compose | None = None, device: str = "cpu", **kwargs
     ) -> None:
         self.device = device
         self.transform = transformations if transformations else transforms.Compose(

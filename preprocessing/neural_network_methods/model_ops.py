@@ -1,5 +1,5 @@
 from pathlib import Path
-from typing import Any, Dict, List
+from typing import Any, Dict, List, cast
 
 from PIL import Image
 from pytorch_lightning import Trainer, LightningModule
@@ -14,9 +14,11 @@ from preprocessing.neural_network_methods.model_inference import PreprocessingIn
 
 
 def train_preprocessing_model(architecture_type: LightningModule, metrics: MetricCollection | None = None) -> None:
-    preprocessing_config: PreprocessingNetConfig = load_config(Path("configs/preprocessing_net_config.yaml"))
-    noise_transform_config: Dict[str, Dict[str, Any]] = load_config(
-        Path("configs/noise_transforms_config.yaml")
+    preprocessing_config = cast(
+        PreprocessingNetConfig, load_config(Path("configs/preprocessing_net_config.yaml"))
+    )
+    noise_transform_config = cast(
+        Dict[str, Dict[str, Any]], load_config(Path("configs/noise_transforms_config.yaml"))
     )
 
     model = PreprocessingModel(
@@ -49,8 +51,8 @@ def test_preprocessing_model(
     if isinstance(images, Image.Image):
         images = [images]
 
-    noise_transform_config: Dict[str, Dict[str, Any]] = load_config(
-        Path("configs/noise_transforms_config.yaml")
+    noise_transform_config = cast(
+        Dict[str, Dict[str, Any]], load_config(Path("configs/noise_transforms_config.yaml"))
     )
     dncnn_inference = PreprocessingInference(
         model_type=PreprocessingModel, path_to_checkpoint=path_to_checkpoint, transformations=transformations,

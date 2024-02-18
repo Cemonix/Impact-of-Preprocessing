@@ -1,5 +1,5 @@
 from pathlib import Path
-from typing import Any, Dict, List
+from typing import Any, Dict, List, cast
 
 from PIL import Image
 from pytorch_lightning import Trainer
@@ -14,7 +14,7 @@ from unet.model_inference import UnetInference
 
 
 def train_unet_model(metrics: MetricCollection | None = None) -> None:
-    unet_config: UnetConfig = load_config(Path("configs/unet_config.yaml"))
+    unet_config: UnetConfig = cast(UnetConfig, load_config(Path("configs/unet_config.yaml")))
 
     model = UNetModel(
         n_channels=unet_config.model.n_channels,
@@ -37,7 +37,6 @@ def train_unet_model(metrics: MetricCollection | None = None) -> None:
     )
     trainer.fit(model, datamodule=datamodule)
 
-# TODO: Send target
 def test_unet_model(
     path_to_checkpoint: Path, images: Image.Image | List[Image.Image],
     targets: Image.Image | List[Image.Image], transformations: transforms.Compose | None

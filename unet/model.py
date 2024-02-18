@@ -12,7 +12,7 @@ class UNetModel(pl.LightningModule):
         self,
         n_channels: int,
         n_classes: int,
-        metrics: MetricCollection = None,
+        metrics: MetricCollection | None = None,
         learning_rate: float = 1e-4,
     ) -> None:
         super().__init__()

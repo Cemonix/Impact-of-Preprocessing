@@ -114,7 +114,7 @@ class NoiseTransformHandler:
         kernel = np.diag(np.ones(size))
         kernel = cv2.warpAffine(kernel, M, (size, size))
 
-        kernel = kernel / size
+        kernel = kernel / size # type: ignore
         blurred_image = cv2.filter2D(image, -1, kernel)
 
         return blurred_image
@@ -175,14 +175,14 @@ class NoiseTransformHandler:
 def test_noise_transforms(
     image_path: Path, noise_transform_config: Dict[str, Dict[str, Any]]
 ) -> None:
-    original_image = np.array(load_image(image_path))
+    original_image = load_image(image_path)
     noise_transform_handler = NoiseTransformHandler()
     noise_types = list(noise_transform_config.keys())
 
     for noise_type in noise_types:
         params = noise_transform_config[noise_type]
         noised_image = noise_transform_handler.apply_noise_transform(
-            original_image.copy(), noise_type, params
+            np.array(original_image).copy(), noise_type, params
         )
         compare_images(
             images=[original_image, noised_image],
