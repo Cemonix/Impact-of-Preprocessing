@@ -1,5 +1,5 @@
 from pathlib import Path
-from typing import Type, Any, Dict
+from typing import Type
 
 import torch
 from PIL import Image

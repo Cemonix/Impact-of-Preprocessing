@@ -7,7 +7,7 @@ class ConvBlock(LightningModule):
     def __init__(
             self, in_channels: int, out_channels: int, conv_kernel: int = 3, padding: int = 1, 
             stride: int = 1, max_pool_kernel: int = 2
-        ) -> None:
+    ) -> None:
         super(ConvBlock, self).__init__()
         self.conv = nn.Sequential(
             nn.Conv2d(in_channels, out_channels, kernel_size=conv_kernel, padding=padding, stride=stride),
@@ -17,11 +17,12 @@ class ConvBlock(LightningModule):
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         return self.conv(x)
-    
+
+
 class DeConvBlock(LightningModule):
     def __init__(
             self, in_channels: int, out_channels: int, kernel_size: int = 3, padding: int = 1, stride: int = 1
-        ) -> None:
+    ) -> None:
         super(DeConvBlock, self).__init__()
         self.conv = nn.Sequential(
             nn.ConvTranspose2d(
@@ -32,6 +33,7 @@ class DeConvBlock(LightningModule):
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         return self.conv(x)
+
 
 class DenoisingAutoencoder(LightningModule):
     def __init__(self, n_channels: int = 1) -> None:

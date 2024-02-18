@@ -1,3 +1,5 @@
+from typing import List
+
 import numpy as np
 import torch
 from PIL import Image
@@ -8,23 +10,26 @@ from common.visualization import compare_images
 
 
 class UnetInference(ModelInference):
-    # TODO: Refactor to multiple images
-    def inference_display(self, image: Image.Image, target: Image.Image, threshold: float = 0.5) -> None:
-        mask = self.__pipeline(image)
-        mask_prob = torch.sigmoid(mask)
-        mask_binary = (mask_prob > threshold).float()
-        mask_squeezed = mask_binary.squeeze(0).squeeze(0)
-        mask_uint8 = (mask_squeezed * 255).numpy().astype(np.uint8)
-        polygons = mask_to_polygons(mask_uint8)
-        polygons = scale_polygons(polygons, image.size, mask_uint8.shape)
-        image_with_polygons = draw_polygons_on_image(image, polygons)
+    def inference_display(
+        self, images: List[Image.Image], targets: List[Image.Image], threshold: float = 0.5
+    ) -> None:
+        images_for_comparison = []
+        for image, target in zip(images, targets):
+            target_polygons = mask_to_polygons(np.array(target))
+            target_with_polygons = draw_polygons_on_image(image, target_polygons)
 
-        target_polygons = mask_to_polygons(np.array(target))
-        target_with_polygons = draw_polygons_on_image(image, target_polygons)
+            mask = self.__pipeline(image)
+            mask_prob = torch.softmax(mask, dim=1).numpy()
+            mask_binary = (mask_prob > threshold).float().squeeze(0).squeeze(0)
+            mask_uint8 = (mask_binary * 255).astype(np.uint8)
+            polygons = mask_to_polygons(mask_uint8)
+            polygons = scale_polygons(polygons, image.size, mask_uint8.shape)
+            image_with_polygons = draw_polygons_on_image(image, polygons)
+
+            images_for_comparison.extend([image, target_with_polygons, image_with_polygons])
+
         compare_images(
-            [image, target_with_polygons, image_with_polygons],
-            ["Original image", "Target", "Prediction"],
-            zoom = False
+            images=images_for_comparison, titles=["Original image", "Target", "Prediction"], zoom=False
         )
 
     def __pipeline(self, image: Image.Image) -> torch.Tensor:

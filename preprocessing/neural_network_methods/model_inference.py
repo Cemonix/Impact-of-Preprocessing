@@ -32,9 +32,7 @@ class PreprocessingInference(ModelInference):
                 ]
             )
 
-        compare_images(
-            images_for_display, ["Original image", "Noised image", "Prediction"], 3
-        )
+        compare_images(images_for_display, ["Original image", "Noised image", "Prediction"])
 
     def __pipeline(self, image: Image.Image) -> Tuple[torch.Tensor, torch.Tensor]:
         noised_tensor = self.__preprocess_image(image)

@@ -1,7 +1,6 @@
 from pathlib import Path
-from typing import List, Literal, Tuple
+from typing import List, Tuple
 
-import numpy as np
 import cv2
 from numpy import typing as npt
 from PIL import Image, ImageDraw
@@ -11,7 +10,8 @@ from sympy import Point, Polygon
 def load_image(image_path: Path) -> Image.Image:
     with Image.open(image_path) as img:
         return img.convert("L")
-    
+
+
 def mask_to_polygons(mask: npt.NDArray) -> List[Polygon]:
     contours, _ = cv2.findContours(mask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
 
@@ -28,6 +28,7 @@ def mask_to_polygons(mask: npt.NDArray) -> List[Polygon]:
             polygons.append(polygon)
 
     return polygons
+
 
 def scale_polygons(
     polygons: List[Polygon], image_size: Tuple[int, int], mask_size: Tuple[int, int]
@@ -50,10 +51,11 @@ def scale_polygons(
 
     scaled_polygons = []
     for polygon in polygons:
-        scaled_vertices = [Point(point.x * scale_x, point.y * scale_y) for point in polygon.vertices]  # type:ignore
+        scaled_vertices = [Point(point.x * scale_x, point.y * scale_y) for point in polygon.vertices]
         scaled_polygons.append(Polygon(*scaled_vertices))
 
     return scaled_polygons
+
 
 def draw_polygons_on_image(
     image: Image.Image, polygons: List[Polygon],
@@ -78,7 +80,7 @@ def draw_polygons_on_image(
     draw_overlay = ImageDraw.Draw(overlay)
 
     for polygon in polygons:
-        vertices = [(float(p.x), float(p.y)) for p in polygon.vertices] # type:ignore
+        vertices = [(float(p.x), float(p.y)) for p in polygon.vertices]
         draw_overlay.polygon(vertices, fill=fill_color)
 
     return Image.alpha_composite(image, overlay)

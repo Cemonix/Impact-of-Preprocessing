@@ -17,7 +17,7 @@ def load_config(config_path: Path) -> PreprocessingNetConfig | UnetConfig | Dict
     else:
         raise ValueError("Invalid config file name or type")
 
-    with open(config_path, "r") as file:
+    with open(config_path) as file:
         config_dict = yaml.safe_load(file)
 
     return config_dict if config_type == dict else config_type(**config_dict)

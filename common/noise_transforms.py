@@ -11,8 +11,9 @@ from common.visualization import compare_images
 
 
 class NoiseTransformHandler:
+    @staticmethod
     def add_gaussian_noise(
-        self, image: npt.NDArray, mean: float = 0, std: float = 1
+        image: npt.NDArray, mean: float = 0, std: float = 1
     ) -> npt.NDArray:
         """
         Adds Gaussian noise to an image.
@@ -30,8 +31,9 @@ class NoiseTransformHandler:
         noisy_image = np.clip(noisy_image, 0, 255).astype(np.uint8)
         return noisy_image
 
+    @staticmethod
     def add_speckle_noise(
-        self, image: npt.NDArray, intensity: float = 0.05
+        image: npt.NDArray, intensity: float = 0.05
     ) -> npt.NDArray:
         """
         Adds speckle noise to an image.
@@ -48,8 +50,8 @@ class NoiseTransformHandler:
         noisy_image = np.clip(noisy_image, 0, 255).astype(np.uint8)
         return noisy_image
 
+    @staticmethod
     def add_salt_and_pepper_noise(
-        self,
         image: npt.NDArray,
         salt_prob: float = 0.05,
         pepper_prob: float = 0.05,
@@ -72,9 +74,10 @@ class NoiseTransformHandler:
         image[pepper] = 0
         return image
 
+    @staticmethod
     def add_poisson_noise(
-        self, image: npt.NDArray, intensity: float = 1.0
-    ) -> npt.NDArray:
+        image: npt.NDArray, intensity: float = 1.0
+    ) -> float:
         """
         Adds Poisson (Shot) noise to an image with adjustable intensity.
 
@@ -96,8 +99,9 @@ class NoiseTransformHandler:
 
         return noisy_image
 
+    @staticmethod
     def add_motion_blur(
-        self, image: npt.NDArray, size: int = 15, angle: int = 0
+        image: npt.NDArray, size: int = 15, angle: int = 0
     ) -> npt.NDArray:
         """
         Applies motion blur to an image.
@@ -110,17 +114,18 @@ class NoiseTransformHandler:
         Returns:
             npt.NDArray: Blurred image.
         """
-        M = cv2.getRotationMatrix2D((size / 2, size / 2), angle, 1)
+        matrix = cv2.getRotationMatrix2D((size / 2, size / 2), angle, 1)
         kernel = np.diag(np.ones(size))
-        kernel = cv2.warpAffine(kernel, M, (size, size))
+        kernel = cv2.warpAffine(kernel, matrix, (size, size))
 
-        kernel = kernel / size # type: ignore
+        kernel /= size
         blurred_image = cv2.filter2D(image, -1, kernel)
 
         return blurred_image
 
+    @staticmethod
     def add_gaussian_blur(
-        self, image: npt.NDArray, sigma: float = 2.0
+        image: npt.NDArray, sigma: float = 2.0
     ) -> npt.NDArray:
         """
         Applies out-of-focus blur to an image to simulate focus issues during image acquisition.
@@ -134,8 +139,8 @@ class NoiseTransformHandler:
         """
         return cv2.GaussianBlur(image, (0, 0), sigma)
 
+    @staticmethod
     def add_beam_hardening_artifact(
-        self,
         image: npt.NDArray,
         intensity: float = 0.2,
         lower_bound: float = 1.0,

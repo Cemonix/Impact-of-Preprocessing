@@ -53,7 +53,6 @@ if __name__ == "__main__":
     noise_type = 'gaussian_noise'
     test_preprocessing_model(image, preprocessing_checkpoint_path, transformations, model_params, noise_type)
 
-    # TODO: Predelat puvodni denoising autoencoder na aktualni
     # TODO: Implementovat denoising autoencoder jako UNet - skip connections
     # TODO: Implementovat pipeline preprocessing -> UNet -> mereni vlivu
     # TODO: Vyzkouset pouziti klasickych metod

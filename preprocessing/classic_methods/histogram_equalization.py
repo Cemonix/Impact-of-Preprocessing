@@ -38,17 +38,17 @@ def histogram_equalization_grayscale(image: npt.NDArray) -> npt.NDArray:
     cdf = histogram.cumsum()
     cdf_min = cdf.min()
 
-    M, N = image.shape
+    widht, height = image.shape
 
     transformed_img: npt.NDArray = np.round(
-        (cdf[image] - cdf_min) / (M * N - cdf_min) * (255)
+        (cdf[image] - cdf_min) / (widht * height - cdf_min) * 255
     )
     return transformed_img.astype("uint8")
 
 
 if __name__ == "__main__":
-    image = load_image_as_grayscale("ChestImages/JPCNN001.jpg")
-    equalized_image = histogram_equalization_grayscale(image)
+    img = load_image_as_grayscale("ChestImages/JPCNN001.jpg")
+    equalized_image = histogram_equalization_grayscale(img)
 
     transformed_image = Image.fromarray(equalized_image)
     transformed_image.show()
