@@ -1,19 +1,19 @@
 gaussian_noise:
   mean: 0
   std:
-    min: 10
-    max: 70
+    min: 50
+    max: 500
 
 speckle_noise:
-  intensity:
+  intensity_min:
     min: 0.05
     max: 0.95
 
 salt_and_pepper_noise:
-  salt_prob:
+  salt_prob_min:
     min: 0.02
     max: 0.75
-  pepper_prob:
+  pepper_prob_min:
     min: 0.02
     max: 0.75
 

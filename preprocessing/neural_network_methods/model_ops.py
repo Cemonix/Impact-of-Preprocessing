@@ -2,6 +2,7 @@ from pathlib import Path
 from typing import Any, Dict, List, cast
 
 from PIL import Image
+import mlflow.pytorch
 from pytorch_lightning import Trainer, LightningModule
 from torchmetrics import MetricCollection
 from torchvision.transforms import transforms
@@ -42,7 +43,11 @@ def train_preprocessing_model(architecture_type: LightningModule, metrics: Metri
         max_epochs=preprocessing_config.training.max_epochs,
         log_every_n_steps=preprocessing_config.training.log_every_n_steps
     )
-    trainer.fit(model, datamodule=datamodule)
+
+    mlflow.pytorch.autolog()
+
+    with mlflow.start_run() as run:
+        trainer.fit(model, datamodule=datamodule)
 
 
 def test_preprocessing_model(
