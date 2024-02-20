@@ -28,8 +28,7 @@ class NoiseTransformHandler:
         """
         gaussian = np.random.normal(mean, std, image.shape)
         noisy_image = image + gaussian
-        noisy_image = np.clip(noisy_image, 0, 255).astype(np.uint8)
-        return noisy_image
+        return np.clip(noisy_image, 0, 255).astype(np.uint8)
 
     @staticmethod
     def add_speckle_noise(
@@ -47,8 +46,7 @@ class NoiseTransformHandler:
         """
         noise = np.random.normal(0, 1, image.shape)
         noisy_image = image + image * noise * intensity
-        noisy_image = np.clip(noisy_image, 0, 255).astype(np.uint8)
-        return noisy_image
+        return np.clip(noisy_image, 0, 255).astype(np.uint8)
 
     @staticmethod
     def add_salt_and_pepper_noise(
@@ -88,16 +86,15 @@ class NoiseTransformHandler:
         Returns:
             npt.NDArray: Noisy image.
         """
-        scaled_image = image * intensity
+        if intensity != 1.0:
+            image *= intensity
 
-        # Calculate the maximum value to scale the image for Poisson distribution
-        unique_pixels = len(np.unique(image))
-        max_val = 2 ** np.ceil(np.log2(unique_pixels))
-        scaled_image = np.clip(scaled_image, 0, max_val - 1)
+        noisy_image = np.random.poisson(image).astype(image.dtype)
 
-        noisy_image = np.random.poisson(scaled_image) / intensity
+        if intensity != 1.0:
+            noisy_image /= intensity
 
-        return noisy_image
+        return np.clip(noisy_image, 0, 255).astype(np.uint8)
 
     @staticmethod
     def add_motion_blur(

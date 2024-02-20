@@ -40,7 +40,7 @@ def train_unet_model(metrics: MetricCollection | None = None) -> None:
 
     mlflow.pytorch.autolog()
 
-    with mlflow.start_run() as run:
+    with mlflow.start_run():
         trainer.fit(model, datamodule=datamodule)
 
 
