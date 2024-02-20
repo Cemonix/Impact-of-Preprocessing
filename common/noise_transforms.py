@@ -77,7 +77,7 @@ class NoiseTransformHandler:
     @staticmethod
     def add_poisson_noise(
         image: npt.NDArray, intensity: float = 1.0
-    ) -> float:
+    ) -> npt.NDArray:
         """
         Adds Poisson (Shot) noise to an image with adjustable intensity.
 
