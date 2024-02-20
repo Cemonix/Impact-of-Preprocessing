@@ -5,6 +5,7 @@ from PIL import Image
 from pytorch_lightning import Trainer
 from torchmetrics import MetricCollection
 from torchvision.transforms import transforms
+import mlflow.pytorch
 
 from common.configs.config import load_config
 from common.configs.unet_config import UnetConfig
@@ -34,8 +35,13 @@ def train_unet_model(metrics: MetricCollection | None = None) -> None:
     trainer = Trainer(
         accelerator=unet_config.training.accelerator,
         max_epochs=unet_config.training.max_epochs,
+        log_every_n_steps=unet_config.training.log_every_n_steps,
     )
-    trainer.fit(model, datamodule=datamodule)
+
+    mlflow.pytorch.autolog()
+
+    with mlflow.start_run() as run:
+        trainer.fit(model, datamodule=datamodule)
 
 
 def test_unet_model(

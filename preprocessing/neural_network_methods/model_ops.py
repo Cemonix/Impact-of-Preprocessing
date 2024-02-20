@@ -40,6 +40,7 @@ def train_preprocessing_model(architecture_type: LightningModule, metrics: Metri
     trainer = Trainer(
         accelerator=preprocessing_config.training.accelerator,
         max_epochs=preprocessing_config.training.max_epochs,
+        log_every_n_steps=preprocessing_config.training.log_every_n_steps
     )
     trainer.fit(model, datamodule=datamodule)
 

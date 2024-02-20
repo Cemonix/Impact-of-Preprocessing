@@ -20,6 +20,7 @@ class UnetDataLoaderConfig(BaseModel):
 class UnetTrainingConfig(BaseModel):
     accelerator: str
     max_epochs: int
+    log_every_n_steps: int
 
 
 class UnetConfig(BaseModel):

@@ -20,6 +20,7 @@ class PreprocessingDataLoaderConfig(BaseModel):
 class PreprocessingTrainingConfig(BaseModel):
     accelerator: str
     max_epochs: int
+    log_every_n_steps: int
 
 
 class PreprocessingNetConfig(BaseModel):

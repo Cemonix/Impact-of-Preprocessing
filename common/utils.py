@@ -12,4 +12,3 @@ def get_random_from_min_max_dict(
         else:
             random_dict[key] = value
     return random_dict
-24242

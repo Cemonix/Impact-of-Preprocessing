@@ -12,3 +12,4 @@ dataloader:
 training:
   accelerator: "cuda"
   max_epochs: 50
+  log_every_n_steps: 10
