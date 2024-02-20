@@ -1,3 +1,4 @@
+from numpy import pad
 import torch
 import torch.nn as nn
 from pytorch_lightning import LightningModule
@@ -5,12 +6,12 @@ from pytorch_lightning import LightningModule
 
 class ConvBlock(LightningModule):
     def __init__(
-            self, in_channels: int, out_channels: int, conv_kernel: int = 3, padding: int = 1, 
+            self, in_channels: int, out_channels: int, kernel_size: int = 3, padding: int = 1, 
             stride: int = 1, max_pool_kernel: int = 2
     ) -> None:
         super(ConvBlock, self).__init__()
         self.conv = nn.Sequential(
-            nn.Conv2d(in_channels, out_channels, kernel_size=conv_kernel, padding=padding, stride=stride),
+            nn.Conv2d(in_channels, out_channels, kernel_size=kernel_size, padding=padding, stride=stride),
             nn.ReLU(inplace=True),
             nn.MaxPool2d(max_pool_kernel)
         )
@@ -21,12 +22,14 @@ class ConvBlock(LightningModule):
 
 class DeConvBlock(LightningModule):
     def __init__(
-            self, in_channels: int, out_channels: int, kernel_size: int = 3, padding: int = 1, stride: int = 1
+            self, in_channels: int, out_channels: int, kernel_size: int = 3, stride: int = 1,  padding: int = 0,
+            output_padding: int = 0
     ) -> None:
         super(DeConvBlock, self).__init__()
         self.conv = nn.Sequential(
             nn.ConvTranspose2d(
-                in_channels, out_channels, kernel_size=kernel_size, padding=padding, stride=stride
+                in_channels, out_channels, kernel_size=kernel_size, stride=stride,
+                padding=padding, output_padding=output_padding
             ),
             nn.ReLU(inplace=True),
         )
@@ -53,7 +56,7 @@ class DenoisingAutoencoder(LightningModule):
             nn.Sigmoid()
         )
 
-    def forward(self, x):
+    def forward(self, x) -> torch.Tensor:
         noise = self.encoder(x)
         noise = self.decoder(noise)
         return x - noise

@@ -5,9 +5,9 @@ model:
 dataloader:
   image_dir: "data/LungSegmentation/CXR_png/"
   batch_size: 32
-  num_workers: 8
+  num_workers: 12
   train_ratio: 0.8
-  noise_types: ["gaussian_noise"]
+  noise_types: ["salt_and_pepper_noise"]
 
 training:
   accelerator: "cuda"

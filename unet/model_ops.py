@@ -38,9 +38,11 @@ def train_unet_model(metrics: MetricCollection | None = None) -> None:
         log_every_n_steps=unet_config.training.log_every_n_steps,
     )
 
-    mlflow.pytorch.autolog()
+    mlflow.pytorch.autolog(
+        log_every_n_step=unet_config.training.log_every_n_steps
+    )
 
-    with mlflow.start_run():
+    with mlflow.start_run(run_name="UNet"):
         trainer.fit(model, datamodule=datamodule)
 
 

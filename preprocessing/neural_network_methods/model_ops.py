@@ -44,9 +44,11 @@ def train_preprocessing_model(architecture_type: LightningModule, metrics: Metri
         log_every_n_steps=preprocessing_config.training.log_every_n_steps
     )
 
-    mlflow.pytorch.autolog()
+    mlflow.pytorch.autolog(
+        log_every_n_step=preprocessing_config.training.log_every_n_steps
+    )
 
-    with mlflow.start_run():
+    with mlflow.start_run(run_name=architecture_type.__name__):
         trainer.fit(model, datamodule=datamodule)
 
 
