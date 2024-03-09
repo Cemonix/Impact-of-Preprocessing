@@ -12,7 +12,7 @@ def load_config(config_path: Path) -> PreprocessingNetConfig | UnetConfig | Dict
         config_type = PreprocessingNetConfig
     elif "unet" in config_path.stem:
         config_type = UnetConfig
-    elif "noise" in config_path.stem:
+    elif "noise_transforms" in config_path.stem or "standard_preprocessing" in config_path.stem:
         config_type = dict
     else:
         raise ValueError("Invalid config file name or type")
