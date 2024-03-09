@@ -4,7 +4,7 @@ from pytorch_lightning import LightningModule
 
 
 class DnCNN(LightningModule):
-    def __init__(self, depth: int = 17, n_channels: int = 64, image_channels: int = 1):
+    def __init__(self, depth: int = 17, n_channels: int = 64, image_channels: int = 1) -> None:
         super(DnCNN, self).__init__()
         layers = [nn.Conv2d(image_channels, n_channels, kernel_size=3, padding=1), nn.ReLU(inplace=True)]
 

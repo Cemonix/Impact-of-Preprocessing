@@ -4,10 +4,10 @@ model:
   learning_rate: 0.001
 
 dataloader:
-  image_dir: "data/LungSegmentation/CXR_png_200/"
-  masks_dir: "data/LungSegmentation/masks_200/"
-  batch_size: 32
-  num_workers: 4
+  image_dir: "data/dataset/images/"
+  masks_dir: "data/dataset/masks/"
+  batch_size: 16
+  num_workers: 8
   train_ratio: 0.8
 
 training:

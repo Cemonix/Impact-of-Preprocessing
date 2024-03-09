@@ -153,7 +153,7 @@ dmypy.json
 cython_debug/
 
 # Data
-LungSegmentation/
+data/
 
 # Trained models
 lightning_logs/

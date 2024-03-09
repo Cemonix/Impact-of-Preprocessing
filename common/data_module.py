@@ -33,12 +33,7 @@ class DataModule(ABC, LightningDataModule):
         self.train = None
         self.val = None
         self.test = None
-
-    def prepare_data(self) -> None:
-        assert os.path.exists(
-            self.image_dir
-        ), f"Image directory {self.image_dir} does not exist."
-
+        
     @abstractmethod
     def setup(self, stage: Optional[str] = None) -> None:
         """

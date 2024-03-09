@@ -19,7 +19,7 @@ class PreprocessingModel(LightningModule):
         self.learning_rate = learning_rate
         self.metrics = metrics or MetricCollection({"MSE": MeanSquaredError()})
         self.save_hyperparameters(ignore=["metrics"])
-        self.model = architecture_type(n_channels)
+        self.model = architecture_type(image_channels=n_channels)
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         return self.model(x)

@@ -17,13 +17,7 @@ class UNetModel(pl.LightningModule):
     ) -> None:
         super().__init__()
         self.learning_rate = learning_rate
-        self.metrics = metrics or MetricCollection(
-            {
-                "jaccard_index": JaccardIndex(
-                    task="binary", num_classes=n_classes
-                )
-            }
-        )
+        self.metrics = metrics or MetricCollection({"jaccard_index": JaccardIndex(task="binary", num_classes=n_classes)})
         self.save_hyperparameters(ignore=['metrics'])
         self.model = UNet(n_channels, n_classes)
 
@@ -54,7 +48,7 @@ class UNetModel(pl.LightningModule):
         binary_masks = (masks > 0).float()
         self.metrics.update(torch.sigmoid(predictions), binary_masks)
 
-    def on_validation_epoch_end(self):
+    def on_validation_epoch_end(self) -> None:
         metrics = self.metrics.compute()
         for name, value in metrics.items():
             self.log(f"val_{name}", value)
