@@ -6,8 +6,7 @@ from PIL import Image
 from torchvision.transforms.functional import to_pil_image
 
 from common.model_inference import ModelInference
-from common.noise_transforms import NoiseTransformHandler
-from common.utils import get_random_from_min_max_dict
+from common.utils import get_random_from_min_max_dict, apply_noise_transform
 from common.visualization import compare_images
 
 
@@ -17,7 +16,6 @@ class PreprocessingInference(ModelInference):
     ) -> None:
         super().__init__(**kwargs)
         self.noise_transform_config = noise_transform_config
-        self.noise_transform_handler = NoiseTransformHandler()
         self.noise_type = noise_type
 
     def inference_display(self, images: List[Image.Image]) -> None:
@@ -42,9 +40,7 @@ class PreprocessingInference(ModelInference):
     def __preprocess_image(self, image: Image.Image) -> torch.Tensor:
         noise_type_params = self.noise_transform_config[self.noise_type]
         noise_type_params = get_random_from_min_max_dict(noise_type_params)
-        noised_image = self.noise_transform_handler.apply_noise_transform(
-            np.array(image), self.noise_type, noise_type_params
-        )
+        noised_image = apply_noise_transform(np.array(image), self.noise_type, noise_type_params)
         return self.process_image(noised_image)
     
     

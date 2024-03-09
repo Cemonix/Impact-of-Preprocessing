@@ -1,4 +1,5 @@
 from pathlib import Path
+
 from torchmetrics import (
     MetricCollection,
     PeakSignalNoiseRatio,
@@ -7,7 +8,6 @@ from torchmetrics import (
 from torchvision.transforms import transforms
 
 from common.data_manipulation import load_image
-from preprocessing.neural_network_methods.DAE.denoising_autoencoder import DenoisingAutoencoder
 from preprocessing.neural_network_methods.DnCNN.dncnn import DnCNN
 from preprocessing.neural_network_methods.model_ops import test_preprocessing_model, train_preprocessing_model
 from unet.model_ops import test_unet_model, train_unet_model
@@ -26,8 +26,8 @@ if __name__ == "__main__":
                     "SSIM": StructuralSimilarityIndexMeasure(),
                 }
             )
-            # train_preprocessing_model(DenoisingAutoencoder, metrics) # type: ignore
-            train_preprocessing_model(DnCNN, metrics) # type: ignore
+            # train_preprocessing_model(DenoisingAutoencoder, metrics)  # type: ignore
+            train_preprocessing_model(DnCNN, metrics)  # type: ignore
     else:
         image = load_image(Path("data/dataset/images/CHNCXR_0005_0.png"))
         target = load_image(Path("data/dataset/masks/CHNCXR_0005_0_mask.png"))

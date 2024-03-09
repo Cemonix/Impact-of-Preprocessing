@@ -8,8 +8,7 @@ from PIL import Image
 from torch.utils.data import Dataset
 from torchvision import transforms
 
-from common.noise_transforms import NoiseTransformHandler
-from common.utils import get_random_from_min_max_dict
+from common.utils import get_random_from_min_max_dict, apply_noise_transform
 
 
 class PreprocessingDataset(Dataset):
@@ -25,7 +24,6 @@ class PreprocessingDataset(Dataset):
         self.noise_transform_config = noise_transform_config
         self.noise_types = noise_types
 
-        self.noise_transform_handler = NoiseTransformHandler()
         self.images = os.listdir(image_dir)
 
     def __len__(self) -> int:
@@ -38,10 +36,8 @@ class PreprocessingDataset(Dataset):
         selected_noise_type = random.choice(self.noise_types) if len(self.noise_types) > 1 else self.noise_types[0]
         params = self.noise_transform_config[selected_noise_type]
         params = get_random_from_min_max_dict(params)
-        
-        noised_image = self.noise_transform_handler.apply_noise_transform(
-            np.array(image.copy()), selected_noise_type, params
-        )
+
+        noised_image = apply_noise_transform(np.array(image.copy()), selected_noise_type, params)
 
         image = self.transform(image)
         noised_image = self.transform(noised_image)
