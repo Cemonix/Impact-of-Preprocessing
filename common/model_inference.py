@@ -1,5 +1,6 @@
+from abc import ABC, abstractmethod
 from pathlib import Path
-from typing import Type
+from typing import Any, Type
 
 import torch
 from PIL import Image
@@ -7,7 +8,7 @@ from pytorch_lightning import LightningModule
 from torchvision.transforms import transforms
 
 
-class ModelInference:
+class ModelInference(ABC):
     def __init__(
         self, model_type: Type[LightningModule], path_to_checkpoint: Path,
         transformations: transforms.Compose | None = None, device: str = "cpu", **kwargs
@@ -27,10 +28,9 @@ class ModelInference:
         img_tensor: torch.Tensor = self.transform(image).unsqueeze(0)
         return img_tensor.to(self.device)
 
-    def perform_inference(self, image_tensor: torch.Tensor) -> torch.Tensor:
-        with torch.no_grad():
-            prediction: torch.Tensor = self.model(image_tensor)
-        return prediction.to(self.device)
+    @abstractmethod
+    def perform_inference(self, image_tensor: torch.Tensor) -> Any:
+        pass
 
     @staticmethod
     def __load_model(
