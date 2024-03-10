@@ -32,6 +32,11 @@ class UnetInference(ModelInference):
             images=images_for_comparison, titles=["Original image", "Target", "Prediction"], zoom=False
         )
 
+    def perform_inference(self, image_tensor: torch.Tensor) -> torch.Tensor:
+        with torch.no_grad():
+            prediction: torch.Tensor = self.model(image_tensor)
+        return prediction.to(self.device)
+    
     def __pipeline(self, image: Image.Image) -> torch.Tensor:
         image_tensor = self.process_image(image)
         prediction = self.perform_inference(image_tensor)

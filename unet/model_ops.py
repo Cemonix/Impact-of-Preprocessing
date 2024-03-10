@@ -10,7 +10,7 @@ import mlflow.pytorch
 from common.configs.config import load_config
 from common.configs.unet_config import UnetConfig
 from unet.data_module import LungSegmentationDataModule
-from unet.model import UNetModel
+from unet.unet import UNetModel
 from unet.model_inference import UnetInference
 
 

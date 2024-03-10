@@ -9,7 +9,9 @@ from common.model_inference import ModelInference
 from common.utils import get_random_from_min_max_dict, apply_noise_transform
 from common.visualization import compare_images
 
-
+# TODO: Refactor:
+# - perform_inference, __pipeline will differ based on model
+# - __preprocess_image will not get min, max but set one value based on noise type
 class PreprocessingInference(ModelInference):
     def __init__(
         self, noise_transform_config: Dict[str, Dict[str, Any]], noise_type: str, **kwargs
@@ -32,6 +34,11 @@ class PreprocessingInference(ModelInference):
 
         compare_images(images_for_display, ["Original image", "Noised image", "Prediction"])
 
+    def perform_inference(self, image_tensor: torch.Tensor) -> torch.Tensor:
+        with torch.no_grad():
+            prediction: torch.Tensor = self.model(image_tensor)
+        return prediction.to(self.device)
+    
     def __pipeline(self, image: Image.Image) -> Tuple[torch.Tensor, torch.Tensor]:
         noised_tensor = self.__preprocess_image(image)
         prediction = self.perform_inference(noised_tensor)
