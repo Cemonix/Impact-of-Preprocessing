@@ -14,12 +14,12 @@ def apply_histogram_equalization(image: npt.NDArray) -> npt.NDArray:
     contrast.
 
     Args:
-        image (npt.NDArray): A 2D NumPy array representing the grayscale image
+        image (numpy.ndarray): A 2D NumPy array representing the grayscale image
                              to be processed. It should be an 8-bit image with
                              values ranging from 0 to 255.
 
     Returns:
-        npt.NDArray: A 2D NumPy array representing the histogram-equalized image.
+        numpy.ndarray: A 2D NumPy array representing the histogram-equalized image.
     """
     histogram, _ = np.histogram(image.flatten(), bins=256, range=(0, 256))
     cdf = histogram.cumsum()
@@ -32,20 +32,48 @@ def apply_histogram_equalization(image: npt.NDArray) -> npt.NDArray:
 
 
 def apply_clahe(image: npt.NDArray, clip_limit: float = 0.01, nbins: int = 256) -> np.ndarray:
+    """
+    Applies Contrast Limited Adaptive Histogram Equalization (CLAHE) to the input image.
+
+    Parameters:
+        image (numpy.ndarray): The input image.
+        clip_limit (float, optional): Threshold for contrast limiting. Default is 0.01.
+        nbins (int, optional): Number of histogram bins. Default is 256.
+
+    Returns:
+        numpy.ndarray: The processed image after applying CLAHE.
+
+    """
     processed_image = exposure.equalize_adapthist(image, clip_limit=clip_limit, nbins=nbins)
     return (processed_image * 255).astype(np.uint8)
 
 
 def apply_otsu_thresholding(image: npt.NDArray, nbins: int = 256) -> npt.NDArray:
+    """
+    Applies Otsu thresholding to the input image.
+
+    Parameters:
+        image (numpy.ndarray): The input image.
+        nbins (int): The number of bins used for histogram calculation. Default is 256.
+
+    Returns:
+        numpy.ndarray: The thresholded image.
+
+    """
     threshold_value = filters.threshold_otsu(image, nbins=nbins)
     return (image > threshold_value).astype(np.uint8)
 
 
 def apply_sobel_edge_detection(image: npt.NDArray) -> npt.NDArray:
+    """
+    Applies Sobel edge detection to the input image.
+
+    Parameters:
+        image (numpy.ndarray): The input image.
+
+    Returns:
+        numpy.ndarray: The processed image with Sobel edge detection applied.
+    """
     processed_image = filters.sobel(image)
     return (processed_image * 255).astype(np.uint8)
 
-
-def apply_gaussian_blur(image: npt.NDArray, sigma: float = 1) -> npt.NDArray:
-    processed_image = filters.gaussian(image, sigma=sigma)
-    return (processed_image * 255).astype(np.uint8)

@@ -94,7 +94,7 @@ def add_motion_blur(
     kernel = np.diag(np.ones(size))
     kernel = cv2.warpAffine(kernel, matrix, (size, size))
 
-    kernel /= size
+    kernel /= size # type: ignore
     blurred_image = cv2.filter2D(image, -1, kernel)
 
     return blurred_image

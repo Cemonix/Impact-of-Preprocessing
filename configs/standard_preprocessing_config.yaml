@@ -5,5 +5,3 @@ clahe:
 otsu_thresholding:
   nbins: 256
 sobel_edge_detection: { }
-gaussian_blur:
-  sigma: 1

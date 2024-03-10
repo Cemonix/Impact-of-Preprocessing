@@ -51,7 +51,7 @@ def scale_polygons(
 
     scaled_polygons = []
     for polygon in polygons:
-        scaled_vertices = [Point(point.x * scale_x, point.y * scale_y) for point in polygon.vertices]
+        scaled_vertices = [Point(point.x * scale_x, point.y * scale_y) for point in polygon.vertices] # type: ignore
         scaled_polygons.append(Polygon(*scaled_vertices))
 
     return scaled_polygons
@@ -80,7 +80,7 @@ def draw_polygons_on_image(
     draw_overlay = ImageDraw.Draw(overlay)
 
     for polygon in polygons:
-        vertices = [(float(p.x), float(p.y)) for p in polygon.vertices]
+        vertices = [(float(p.x), float(p.y)) for p in polygon.vertices] # type: ignore
         draw_overlay.polygon(vertices, fill=fill_color)
 
     return Image.alpha_composite(image, overlay)
