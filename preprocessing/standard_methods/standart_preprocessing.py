@@ -1,7 +1,7 @@
 import numpy as np
 from numpy import typing as npt
 from skimage import exposure, filters, restoration
-
+from scipy.ndimage import generic_filter
 
 def apply_histogram_equalization(image: npt.NDArray) -> npt.NDArray:
     """
@@ -58,7 +58,7 @@ def apply_gamma_correction(image: npt.NDArray, gamma: int = 1) -> npt.NDArray:
 
 
 def apply_unsharp_masking(
-    image: npt.NDArray, radius: float = 1.0, amount: float = 1.0
+    image: npt.NDArray, radius: float = 0.0, amount: float = 1.0
 ) -> npt.NDArray:
     processed_image = filters.unsharp_mask(image, radius=radius, amount=amount)
     return (processed_image * 255).astype(np.uint8)
@@ -69,7 +69,7 @@ def apply_gaussian_filter(image: npt.NDArray, sigma: int = 1) -> npt.NDArray:
     return (processed_image * 255).astype(np.uint8)
 
 
-def apply_wiener_filter(image: npt.NDArray, psf: npt.NDArray, balance: float = 0.1) -> npt.NDArray:
+def apply_wiener_filter(image: npt.NDArray, balance: float = 0.1) -> npt.NDArray:
     """Apply Wiener filter for image deconvolution.
     
     Args:
@@ -81,8 +81,29 @@ def apply_wiener_filter(image: npt.NDArray, psf: npt.NDArray, balance: float = 0
     Returns:
         npt.NDArray: The deconvolved image, scaled and cast to uint8.
     """
-    processed_image, _ = restoration.wiener(image, psf, balance) # type: ignore
-    return (processed_image * 255).astype(np.uint8) # type: ignore
+    def create_gaussian_psf(size: int = 5, sigma: float = 1.0) -> npt.NDArray:
+        """Create a Gaussian PSF.
+
+        Args:
+            size (int): The size of the PSF array. Should be odd.
+            sigma (float): The standard deviation of the Gaussian kernel.
+
+        Returns:
+            np.ndarray: A 2D array representing the Gaussian PSF.
+        """
+        if size % 2 == 0:
+            size += 1
+        
+        ax = np.arange(-size // 2 + 1.0, size // 2 + 1.0)
+        xx, yy = np.meshgrid(ax, ax)
+
+        # Gaussian formula
+        kernel = np.exp(-(xx**2 + yy**2) / (2. * sigma**2))
+
+        return kernel / np.sum(kernel)
+
+    psf = create_gaussian_psf()
+    return restoration.wiener(image, psf, balance, clip=False) # type: ignore
 
 
 def apply_bilateral_filter(
@@ -97,3 +118,39 @@ def apply_bilateral_filter(
 def apply_non_local_means(image: npt.NDArray, h: float = 1.0) -> npt.NDArray:
     processed_image = restoration.denoise_nl_means(image, h=h)
     return (processed_image * 255).astype(np.uint8)
+
+
+def apply_local_adaptive_median_filter(image: npt.NDArray, radius: int = 1, multiplier: float = 1.0) -> npt.NDArray:
+    """
+    Apply a local adaptive median filter to an image.
+
+    Args:
+        image (npt.NDArray): 2D array representing the grayscale image.
+        radius (int): Radius of the sliding window around each pixel.
+        multiplier (float): Multiplier for determining the noise threshold.
+
+    Returns:
+        npt.NDArray: The filtered image.
+    """
+    # Helper function to process each window
+    def filter_func(window: npt.NDArray) -> np.floating:
+        center = window[len(window) // 2]
+        S = np.sum(window)
+        N = (2 * radius + 1) ** 2
+        mu = S / N
+        sigma = np.sqrt(np.sum((window - mu) ** 2) / N)
+        LB = mu - multiplier * sigma
+        UB = mu + multiplier * sigma
+        
+        # Create a mask for valid pixels within the bounds
+        valid_mask = (window >= LB) & (window <= UB)
+        valid_values = window[valid_mask]
+        
+        if len(valid_values) == 0:  # If no valid values, return the median of the whole window
+            return np.median(window)
+        else:
+            return np.median(valid_values) if (center < LB or center > UB) else center
+
+    filtered_image = generic_filter(image, filter_func, size=(2*radius+1, 2*radius+1))
+
+    return filtered_image

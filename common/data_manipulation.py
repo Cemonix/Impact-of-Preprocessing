@@ -2,14 +2,36 @@ from pathlib import Path
 from typing import List, Tuple
 
 import cv2
+import numpy as np
 from numpy import typing as npt
 from PIL import Image, ImageDraw
 from sympy import Point, Polygon
+from skimage import transform
 
 
 def load_image(image_path: Path) -> Image.Image:
     with Image.open(image_path) as img:
         return img.convert("L")
+
+
+def resize_image(image: npt.NDArray, new_shape: tuple) -> npt.NDArray:
+    """
+    Resize an image to a new shape.
+
+    Args:
+        image (npt.NDArray): The original image array.
+        new_shape (tuple): The desired shape (height, width) for the resized image. 
+                           For a 3D array, this should include the number of channels (height, width, channels).
+
+    Returns:
+        np.ndarray: The resized image.
+    """
+    resized_image = transform.resize(image, new_shape, anti_aliasing=True)
+
+    if image.dtype == np.uint8:
+        resized_image = (resized_image * 255).astype(np.uint8)
+
+    return resized_image
 
 
 def mask_to_polygons(mask: npt.NDArray) -> List[Polygon]:
