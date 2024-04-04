@@ -46,6 +46,3 @@ class PreprocessingModel(LightningModule, ABC):
         metrics: Dict[str, Any] = self.metrics(denoised_images, target)
         for name, value in metrics.items():
             self.log(f"val_{name}", value)
-
-    # TODO: Move traing_step, validation_step to the other models
-    # TODO: Implement the loss function for all the models

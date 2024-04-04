@@ -2,6 +2,4 @@ histogram_equalization: { }
 clahe:
   clip_limit: 0.01
   nbins: 256
-otsu_thresholding:
-  nbins: 256
-sobel_edge_detection: { }
+

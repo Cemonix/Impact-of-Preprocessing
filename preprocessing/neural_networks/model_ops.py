@@ -73,7 +73,7 @@ def train_preprocessing_model(
         log_every_n_step=preprocessing_config.training.log_every_n_steps
     )
 
-    with mlflow.start_run(run_name=architecture_type.__name__):
+    with mlflow.start_run(run_name=architecture_type):
         trainer.fit(model, datamodule=datamodule)
 
 

@@ -25,7 +25,7 @@ class ModelInference(ABC):
         self.model.eval()
 
     def process_image(self, image: Image.Image) -> torch.Tensor:
-        img_tensor: torch.Tensor = self.transform(image).unsqueeze(0)
+        img_tensor: torch.Tensor = self.transform(image).unsqueeze(0) # type: ignore
         return img_tensor.to(self.device)
 
     @abstractmethod

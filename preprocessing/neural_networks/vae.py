@@ -1,6 +1,7 @@
 from typing import Tuple
 import torch
 from torch import nn
+import torch.nn.functional as F
 from torch.distributions.normal import Normal
 from pytorch_lightning import LightningModule
 from torchmetrics import MetricCollection
@@ -175,3 +176,19 @@ class VariationalAutoencoder(PreprocessingModel):
         z_mean, z_log_var, z = self.encoder(x)
         reconstruction = self.decoder(z)
         return reconstruction, z_mean, z_log_var
+    
+    # TODO: Override following methods from PreprocessingModel to work with VAE
+    def training_step(self, batch: torch.Tensor, batch_idx: int) -> torch.Tensor:
+        target, noised_images = batch
+        denoised_images, z_mean, z_log_var = self(noised_images)
+        loss = F.mse_loss(denoised_images, target)
+        self.log("train_loss", loss, on_step=True, prog_bar=True, logger=True)
+        return loss
+
+    def validation_step(self, batch: torch.Tensor, batch_idx: int) -> None:
+        noised_images, target = batch
+        denoised_images = self(noised_images)
+
+        loss = F.mse_loss(denoised_images, target)
+        self.log("val_loss", loss, on_epoch=True, prog_bar=True, logger=True)
+        self.log_metrics(denoised_images, target)

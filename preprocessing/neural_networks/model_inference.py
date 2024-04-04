@@ -6,15 +6,16 @@ from PIL import Image
 from torchvision.transforms.functional import to_pil_image
 
 from common.model_inference import ModelInference
-from common.utils import get_random_from_min_max_dict, apply_noise_transform
+from common.utils import apply_noise_transform
 from common.visualization import compare_images
 
-# TODO: Refactor:
-# - perform_inference, __pipeline will differ based on model
-# - __preprocess_image will not get min, max but set one value based on noise type
+
 class PreprocessingInference(ModelInference):
     def __init__(
-        self, noise_transform_config: Dict[str, Dict[str, Any]], noise_type: str, **kwargs
+        self,
+        noise_transform_config: Dict[str, Dict[str, Any]],
+        noise_type: str,
+        **kwargs
     ) -> None:
         super().__init__(**kwargs)
         self.noise_transform_config = noise_transform_config
@@ -27,18 +28,21 @@ class PreprocessingInference(ModelInference):
             noised_tensor, prediction = self.__pipeline(image.copy())
             images_for_display.extend(
                 [
-                    to_pil_image(img), to_pil_image(noised_tensor.squeeze(0).squeeze(0)),
-                    to_pil_image(prediction.squeeze(0).squeeze(0))
+                    to_pil_image(img),
+                    to_pil_image(noised_tensor.squeeze(0).squeeze(0)),
+                    to_pil_image(prediction.squeeze(0).squeeze(0)),
                 ]
             )
 
-        compare_images(images_for_display, ["Original image", "Noised image", "Prediction"])
+        compare_images(
+            images_for_display, ["Original image", "Noised image", "Prediction"]
+        )
 
     def perform_inference(self, image_tensor: torch.Tensor) -> torch.Tensor:
         with torch.no_grad():
             prediction: torch.Tensor = self.model(image_tensor)
         return prediction.to(self.device)
-    
+
     def __pipeline(self, image: Image.Image) -> Tuple[torch.Tensor, torch.Tensor]:
         noised_tensor = self.__preprocess_image(image)
         prediction = self.perform_inference(noised_tensor)
@@ -46,8 +50,7 @@ class PreprocessingInference(ModelInference):
 
     def __preprocess_image(self, image: Image.Image) -> torch.Tensor:
         noise_type_params = self.noise_transform_config[self.noise_type]
-        noise_type_params = get_random_from_min_max_dict(noise_type_params)
-        noised_image = apply_noise_transform(np.array(image), self.noise_type, noise_type_params)
+        noised_image = apply_noise_transform(
+            np.array(image), self.noise_type, noise_type_params
+        )
         return self.process_image(noised_image)
-    
-    

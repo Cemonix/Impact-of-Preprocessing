@@ -9,7 +9,10 @@ from torchvision.transforms import transforms
 
 from common.data_manipulation import load_image
 from preprocessing.neural_networks.dncnn import DnCNN
-from preprocessing.neural_networks.model_ops import test_preprocessing_model, train_preprocessing_model
+from preprocessing.neural_networks.model_ops import (
+    test_preprocessing_model,
+    train_preprocessing_model,
+)
 from unet.model_ops import test_unet_model, train_unet_model
 
 TRAIN = True
@@ -38,13 +41,25 @@ if __name__ == "__main__":
         )
 
         if UNET:
-            unet_checkpoint_path = Path("lightning_logs/unet_model_v0/checkpoints/epoch=99-step=3200.ckpt")
+            unet_checkpoint_path = Path(
+                "lightning_logs/unet_model_v0/checkpoints/epoch=99-step=3200.ckpt"
+            )
             test_unet_model(unet_checkpoint_path, image, target, transformations)
         else:
-            preprocessing_checkpoint_path = Path("lightning_logs/dncnn_model_v0_512/checkpoints/epoch=49-step=750.ckpt")
+            preprocessing_checkpoint_path = Path(
+                "lightning_logs/dncnn_model_v0_512/checkpoints/epoch=49-step=750.ckpt"
+            )
             model_params = {"architecture_type": DnCNN}
-            noise_type = 'gaussian_noise'
-            test_preprocessing_model(image, preprocessing_checkpoint_path, transformations, model_params, noise_type)
+            noise_type = "gaussian_noise"
+            test_preprocessing_model(
+                image,
+                preprocessing_checkpoint_path,
+                transformations,
+                model_params,
+                noise_type,
+            )
+
+    # TODO: Otestovat a natrenovat VAE
 
     # TODO: Implementovat denoising autoencoder jako UNet - skip connections
     # TODO: Implementovat pipeline preprocessing -> UNet -> mereni vlivu

@@ -3,7 +3,7 @@ from typing import Dict, Any
 import numpy as np
 from PIL import Image
 
-from common.utils import get_random_from_min_max_dict, apply_noise_transform, apply_preprocessing
+from common.utils import apply_noise_transform, apply_preprocessing
 from common.visualization import compare_images
 
 
@@ -14,7 +14,6 @@ def test_noise_transforms(
 
     for noise_type in noise_types:
         params = noise_transform_config[noise_type]
-        params = get_random_from_min_max_dict(params)
         noised_image = apply_noise_transform(np.array(image).copy(), noise_type, params)
         compare_images(
             images=[image, noised_image],
