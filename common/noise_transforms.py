@@ -62,7 +62,7 @@ def add_salt_and_pepper_noise(
     return image
 
 
-def add_poisson_noise(image: npt.NDArray) -> npt.NDArray:
+def add_poisson_noise(image: npt.NDArray, intensity: float = 0.1) -> npt.NDArray:
     """
     Adds Poisson (Shot) noise to an image with adjustable intensity.
 
@@ -72,8 +72,17 @@ def add_poisson_noise(image: npt.NDArray) -> npt.NDArray:
     Returns:
         npt.NDArray: Noisy image.
     """
-    noisy_image = np.random.poisson(image).astype(image.dtype)
-    return np.clip(noisy_image, 0, 255).astype(np.uint8)
+    if image.dtype == np.uint8:
+        scaled_image = image.astype(float) / 255 * intensity
+    else:
+        scaled_image = image * intensity
+
+    vals = len(np.unique(scaled_image))
+    vals = 2 ** np.ceil(np.log2(vals))
+
+    noisy_image: npt.NDArray = np.random.poisson(scaled_image * vals) / float(vals * intensity)
+    noisy_image = (noisy_image * 255).clip(0, 255).astype(np.uint8)
+    return noisy_image
 
 
 def add_motion_blur(

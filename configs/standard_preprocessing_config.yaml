@@ -1,12 +1,12 @@
-# histogram_equalization: {}
-# clahe:
-#   clip_limit: 0.01
-#   nbins: 256
-# gamma_correction:
-#   gamma: 3
-# unsharp_masking:
-#   radius: 1.0
-#   amount: 2.0
+histogram_equalization: {}
+clahe:
+  clip_limit: 0.01
+  nbins: 256
+gamma_correction:
+  gamma: 3
+unsharp_masking:
+  radius: 1.0
+  amount: 2.0
 gaussian_filter:
   sigma: 1
 wiener_filter:

@@ -36,7 +36,7 @@ def compare_images(
         ax.imshow(img, cmap="gray")
         ax.axis("off")
         if idx < len(titles):
-            ax.set_title(titles[idx])
+            ax.set_title(titles[idx], fontsize=20)
 
         if zoom:
             rect = patches.Rectangle(

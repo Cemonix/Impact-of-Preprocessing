@@ -120,7 +120,9 @@ def apply_non_local_means(image: npt.NDArray, h: float = 1.0) -> npt.NDArray:
     return (processed_image * 255).astype(np.uint8)
 
 
-def apply_local_adaptive_median_filter(image: npt.NDArray, radius: int = 1, multiplier: float = 1.0) -> npt.NDArray:
+def apply_local_adaptive_median_filter(
+    image: npt.NDArray, radius: int = 1, multiplier: float = 1.0
+) -> npt.NDArray:
     """
     Apply a local adaptive median filter to an image.
 
