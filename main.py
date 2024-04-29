@@ -1,4 +1,6 @@
+from typing import Optional
 from pathlib import Path
+from numpy import typing as npt 
 
 from torchmetrics import (
     MetricCollection,
@@ -8,12 +10,22 @@ from torchmetrics import (
 from torchvision.transforms import transforms
 
 from common.data_manipulation import load_image
+from common.visualization import plot
 from preprocessing.neural_networks.dncnn import DnCNN
 from preprocessing.neural_networks.model_ops import (
     test_preprocessing_model,
     train_preprocessing_model,
 )
+from statistics_methods.statistics import estimate_noise_in_image
 from unet.model_ops import test_unet_model, train_unet_model
+
+def statistics(self, image: npt.NDArray, save_path: Optional[Path] = None) -> None:
+    eigenvalues, noise_std = estimate_noise_in_image(image)
+    plot(
+        data=eigenvalues, fig_size=(10, 6), marker='o', title="PCA Eigenvalues of Image Patches", 
+        xlabel="Component Index", ylabel="Eigenvalue (Explained Variance)", save_path=save_path
+    )
+    print("Estimated noise standard deviation:", noise_std)
 
 TRAIN = True
 UNET = False

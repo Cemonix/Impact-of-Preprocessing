@@ -1,6 +1,7 @@
 from typing import Dict, Any
 
 import numpy as np
+from numpy import typing as npt
 from PIL import Image
 
 from common.utils import apply_noise_transform, apply_preprocessing
@@ -23,15 +24,23 @@ def test_noise_transforms(
 
 
 def test_preproccesing_methods(
-    image: Image.Image, preprocessing_config: Dict[str, Dict[str, Any]]
+    image: npt.NDArray, noised_image: npt.NDArray,
+    noise_type: str, preprocessing_config: Dict[str, Dict[str, Any]]
 ) -> None:
     preprocess_methods = list(preprocessing_config.keys())
 
+    preprocessed_images = [
+        Image.fromarray(image),
+        Image.fromarray(noised_image),
+    ]
+
     for method in preprocess_methods:
         params = preprocessing_config[method]
-        preprocessed_image = apply_preprocessing(np.array(image).copy(), method, params)
-        compare_images(
-            images=[image, preprocessed_image],
-            titles=["Original image", "Preprocessed image"],
-            images_per_column=2
-        )
+        preprocessed_images.append(apply_preprocessing(image, method, params))
+        
+    titles = [
+        "Originální snímek",
+        f"Zašuměný snímek: {noise_type}",
+        *preprocess_methods
+    ]
+    compare_images(images=preprocessed_images, titles=titles, images_per_column=3)

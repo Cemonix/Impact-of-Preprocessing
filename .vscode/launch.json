@@ -8,7 +8,10 @@
             "cwd": "${workspaceFolder}",
             "program": "main.py",
             "console": "integratedTerminal",
-            "justMyCode": true
+            "justMyCode": true,
+            "env": {
+                "PYTHONPATH": "${workspaceFolder}${pathSeparator}${env:PYTHONPATH}"
+            }
         },
         {
             "name": "Python: Test",
