@@ -1,7 +1,25 @@
-from typing import List, Tuple
+from typing import List, Tuple, Any
+from pathlib import Path
 from PIL import Image
 import matplotlib.pyplot as plt
 import matplotlib.patches as patches
+
+
+def plot(
+    data: Any, fig_size: Tuple[int, int], marker: str | None,
+    title: str, xlabel: str | None, ylabel: str | None, save_path: Path | None = None
+) -> None:
+    plt.figure(figsize=fig_size)
+    plt.plot(data, marker=marker)
+    plt.title(title)
+    plt.xlabel(xlabel) if xlabel is not None else None
+    plt.ylabel(ylabel) if ylabel is not None else None
+    plt.grid(True)
+
+    if save_path is not None:
+        plt.savefig(save_path)
+    else:
+        plt.show()
 
 
 def compare_images(
@@ -28,7 +46,7 @@ def compare_images(
     # Calculate the number of rows needed for the given images per column
     rows = len(images) // images_per_column + (len(images) % images_per_column > 0)
 
-    fig, axes = plt.subplots(rows, images_per_column, figsize=(15 * rows, 7 * rows))
+    _, axes = plt.subplots(rows, images_per_column, figsize=(15 * rows, 7 * rows))
     axes = axes.flatten()
 
     for idx, img in enumerate(images):

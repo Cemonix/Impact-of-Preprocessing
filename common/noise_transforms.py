@@ -72,6 +72,8 @@ def add_poisson_noise(image: npt.NDArray, intensity: float = 0.1) -> npt.NDArray
     Returns:
         npt.NDArray: Noisy image.
     """
+    intensity = 1 / intensity  
+
     if image.dtype == np.uint8:
         scaled_image = image.astype(float) / 255 * intensity
     else:
