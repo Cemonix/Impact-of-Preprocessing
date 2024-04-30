@@ -73,7 +73,9 @@ def scale_polygons(
 
     scaled_polygons = []
     for polygon in polygons:
-        scaled_vertices = [Point(point.x * scale_x, point.y * scale_y) for point in polygon.vertices] # type: ignore
+        scaled_vertices = [
+            Point(point.x * scale_x, point.y * scale_y) for point in polygon.vertices # type: ignore
+        ] 
         scaled_polygons.append(Polygon(*scaled_vertices))
 
     return scaled_polygons

@@ -1,23 +1,23 @@
-gaussian_noise:
-  mean: 0
-  std: 20
+# gaussian_noise:
+#   mean: 0
+#   std: 20
 
 speckle_noise:
-  intensity: 0.1
+  intensity: [0.1, 0.5]
 
 salt_and_pepper_noise:
-  salt_prob: 0.05
-  pepper_prob: 0.05
+  salt_prob: [0.05, 0.3]
+  pepper_prob: [0.05, 0.3]
 
 poisson_noise:
-  intensity: 0.5
+  intensity: [0.1, 1.5]
 
-gaussian_blur:
-  sigma: 5
+# gaussian_blur:
+#   sigma: 5
 
-motion_blur:
-  size: 15
-  angle: 45
+# motion_blur:
+#   size: 15
+#   angle: 45
 
-beam_hardening_artifact:
-  intensity: 0.2
+# beam_hardening_artifact:
+#   intensity: 0.2

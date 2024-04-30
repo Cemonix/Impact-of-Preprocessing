@@ -12,15 +12,6 @@
             "env": {
                 "PYTHONPATH": "${workspaceFolder}${pathSeparator}${env:PYTHONPATH}"
             }
-        },
-        {
-            "name": "Python: Test",
-            "type": "debugpy",
-            "request": "launch",
-            "cwd": "${workspaceFolder}",
-            "program": "test.py",
-            "console": "integratedTerminal",
-            "justMyCode": true
         }
     ]
 }
