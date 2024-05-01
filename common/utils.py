@@ -83,9 +83,7 @@ def create_dataset(
         noised_image = np.array(image).copy()
         for noise_type in chosen_noise_types:
             params = noise_transform_config[noise_type]
-            selected_params = cast(Dict[str, float], params.copy())
-            for key, value in params.items():
-                selected_params[key] = np.random.uniform(value[0], value[1], size=None)
+            selected_params = choose_params_from_minmax(params)
             noised_image = apply_noise_transform(np.array(noised_image), noise_type, selected_params)
 
         noised_image = cast(Image.Image, noised_image)
@@ -100,3 +98,13 @@ def create_dataset(
 
     with open(save_dir / "dataset_info.json", "w") as json_file:
         json.dump({k: dataset_info[k] for k in sorted(dataset_info.keys())}, json_file)
+
+def choose_params_from_minmax(params: Dict[str, List[float]], show_chosen: bool = False) -> Dict[str, float]:
+    selected_params = cast(Dict[str, float], params.copy())
+    for key, value in params.items():
+        chosen_value = np.random.uniform(value[0], value[1], size=None)
+        if show_chosen:
+            print(f"Chosen value for {key}: {chosen_value}")
+        selected_params[key] = chosen_value
+
+    return selected_params

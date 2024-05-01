@@ -14,7 +14,12 @@ from common.visualization import plot
 from common.configs.config import load_config
 from common.configs.unet_config import UnetConfig
 from common.configs.preprocessing_net_config import PreprocessingNetConfig
-from common.utils import apply_noise_transform, apply_preprocessing, create_dataset
+from common.utils import (
+    apply_noise_transform,
+    apply_preprocessing,
+    choose_params_from_minmax,
+    create_dataset,
+)
 from common.visualization import compare_images
 from preprocessing.neural_networks.dncnn import DnCNN
 from preprocessing.neural_networks.dae import DenoisingAutoencoder
@@ -30,21 +35,23 @@ from unet.model_inference import UnetInference
 
 def create_dataset_main() -> None:
     # Parameters:
-    #---------------
-    image_dir = Path("data/test/from")
-    save_dir = Path("data/test/to")
+    # ---------------
+    image_dir = Path("data/main_dataset/original_images")
+    save_dir = Path("data/main_dataset/final_images")
     walk_recursive = False
-    #---------------
+    # ---------------
     create_dataset(image_dir, save_dir, walk_recursive)
 
 
 def train_unet_model() -> None:
     # Parameters:
-    #---------------
+    # ---------------
     metrics = None
-    #---------------
-    
-    unet_config: UnetConfig = cast(UnetConfig, load_config(Path("configs/unet_config.yaml")))
+    # ---------------
+
+    unet_config: UnetConfig = cast(
+        UnetConfig, load_config(Path("configs/unet_config.yaml"))
+    )
 
     model = UNetModel(
         n_channels=unet_config.model.n_channels,
@@ -67,9 +74,7 @@ def train_unet_model() -> None:
         log_every_n_steps=unet_config.training.log_every_n_steps,
     )
 
-    mlflow.pytorch.autolog(
-        log_every_n_step=unet_config.training.log_every_n_steps
-    )
+    mlflow.pytorch.autolog(log_every_n_step=unet_config.training.log_every_n_steps)
 
     with mlflow.start_run(run_name="UNet"):
         trainer.fit(model, datamodule=datamodule)
@@ -77,7 +82,7 @@ def train_unet_model() -> None:
 
 def test_unet_model() -> None:
     # Parameters:
-    #---------------
+    # ---------------
     path_to_checkpoint = Path(
         "lightning_logs/unet_model_v0/checkpoints/epoch=99-step=3200.ckpt"
     )
@@ -89,7 +94,7 @@ def test_unet_model() -> None:
             transforms.ToTensor(),
         ]
     )
-    #---------------
+    # ---------------
 
     if isinstance(images, Image.Image):
         images = [images]
@@ -97,14 +102,16 @@ def test_unet_model() -> None:
         targets = [targets]
 
     unet_inference = UnetInference(
-        model_type=UNetModel, path_to_checkpoint=path_to_checkpoint, transformations=transformations
+        model_type=UNetModel,
+        path_to_checkpoint=path_to_checkpoint,
+        transformations=transformations,
     )
     unet_inference.inference_display(images, targets)
 
 
 def train_preprocessing_model() -> None:
     # Parameters:
-    #---------------
+    # ---------------
     architecture_type = "DenoisingAutoencoder"
     metrics = MetricCollection(
         {
@@ -112,7 +119,7 @@ def train_preprocessing_model() -> None:
             "SSIM": StructuralSimilarityIndexMeasure(),
         }
     )
-    #---------------
+    # ---------------
 
     preprocessing_config = cast(
         PreprocessingNetConfig,
@@ -137,7 +144,7 @@ def train_preprocessing_model() -> None:
                 metrics=metrics,
             )
         case "VariationalAutoencoder":
-            # TODO: get image_shape and embedding_dim 
+            # TODO: get image_shape and embedding_dim
             model = VariationalAutoencoder(
                 image_shape=(256, 256),
                 embedding_dim=0,
@@ -173,7 +180,7 @@ def train_preprocessing_model() -> None:
 
 def test_preprocessing_model() -> None:
     # Parameters:
-    #---------------
+    # ---------------
     images = load_image(Path("data/dataset/images/CHNCXR_0005_0.png"))
     path_to_checkpoint = Path(
         "lightning_logs/dncnn_model_v0_512/checkpoints/epoch=49-step=750.ckpt"
@@ -186,7 +193,7 @@ def test_preprocessing_model() -> None:
     )
     model_params = model_params = {"architecture_type": DnCNN}
     noise_type = "poisson_noise"
-    #---------------
+    # ---------------
 
     if isinstance(images, Image.Image):
         images = [images]
@@ -201,47 +208,69 @@ def test_preprocessing_model() -> None:
         transformations=transformations,
         noise_transform_config=noise_transform_config,
         noise_type=noise_type,
-        **model_params
+        **model_params,
     )
     dncnn_inference.inference_display(images)
 
 
 def test_noise_transforms() -> None:
     # Parameters:
-    #---------------
-    image = load_image(Path("data/LungSegmentation/CXR_png/CHNCXR_0001_0.png"))
-    #---------------
+    # ---------------
+    image = load_image(Path("data/main_dataset/original_images/CHNCXR_0005_0.png"))
+    # ---------------
 
     noise_transform_config = cast(
-        Dict[str, Dict[str, Any]], load_config(Path("configs/noise_transforms_config.yaml"))
+        Dict[str, Dict[str, Any]],
+        load_config(Path("configs/noise_transforms_config.yaml")),
     )
     noise_types = list(noise_transform_config.keys())
 
+    # Separate noise application
     for noise_type in noise_types:
         params = noise_transform_config[noise_type]
-        noised_image = apply_noise_transform(np.array(image).copy(), noise_type, params)
+        selected_params = choose_params_from_minmax(params, show_chosen=True)
+        noised_image = apply_noise_transform(
+            np.array(image).copy(), noise_type, selected_params
+        )
         compare_images(
             images=[image, noised_image],
             titles=["Original image", "Noised image"],
-            images_per_column=2
+            images_per_column=2,
         )
+
+    # All noise application
+    noised_image = image
+    for noise_type in noise_types:
+        params = noise_transform_config[noise_type]
+        selected_params = choose_params_from_minmax(params, show_chosen=True)
+        noised_image = apply_noise_transform(
+            np.array(noised_image), noise_type, selected_params
+        )
+
+    compare_images(
+        images=[image, noised_image],
+        titles=["Original image", "Noised image"],
+        images_per_column=2,
+    )
 
 
 def test_preproccesing_methods() -> None:
     # Parameters:
-    #---------------
+    # ---------------
     image = np.array(load_image(Path("data/dataset/images/CHNCXR_0005_0.png")))
     noise_type = "poisson_noise"
-    #---------------
+    # ---------------
 
     noise_transform_config = cast(
-        Dict[str, Dict[str, Any]], load_config(Path("configs/noise_transforms_config.yaml"))
+        Dict[str, Dict[str, Any]],
+        load_config(Path("configs/noise_transforms_config.yaml")),
     )
     params = noise_transform_config[noise_type]
     noised_image = apply_noise_transform(np.array(image).copy(), noise_type, params)
 
     preprocessing_config = cast(
-        Dict[str, Dict[str, Any]], load_config(Path("configs/standard_preprocessing_config.yaml"))
+        Dict[str, Dict[str, Any]],
+        load_config(Path("configs/standard_preprocessing_config.yaml")),
     )
     preprocess_methods = list(preprocessing_config.keys())
 
@@ -253,40 +282,45 @@ def test_preproccesing_methods() -> None:
     for method in preprocess_methods:
         params = preprocessing_config[method]
         preprocessed_images.append(apply_preprocessing(image, method, params))
-        
+
     titles = [
         "Originální snímek",
         f"Zašuměný snímek: {noise_type}",
-        *preprocess_methods
+        *preprocess_methods,
     ]
     compare_images(images=preprocessed_images, titles=titles, images_per_column=3)
 
 
 def statistics() -> None:
     # Parameters:
-    #---------------
+    # ---------------
     image = load_image(Path("data/dataset/images/CHNCXR_0005_0.png"))
     save_path = None
     noise_type = "poisson_noise"
-    #---------------
+    # ---------------
 
     noise_transform_config = cast(
-        Dict[str, Dict[str, Any]], load_config(Path("configs/noise_transforms_config.yaml"))
+        Dict[str, Dict[str, Any]],
+        load_config(Path("configs/noise_transforms_config.yaml")),
     )
     params = noise_transform_config[noise_type]
     noised_image = apply_noise_transform(np.array(image).copy(), noise_type, params)
 
     eigenvalues, noise_std = estimate_noise_in_image(np.array(noised_image))
     plot(
-        data=eigenvalues, fig_size=(10, 6), marker='o', title="PCA Eigenvalues of Image Patches", 
-        xlabel="Component Index", ylabel="Eigenvalue (Explained Variance)", save_path=save_path
+        data=eigenvalues,
+        fig_size=(10, 6),
+        marker="o",
+        title="PCA Eigenvalues of Image Patches",
+        xlabel="Component Index",
+        ylabel="Eigenvalue (Explained Variance)",
+        save_path=save_path,
     )
     print("Estimated noise standard deviation:", noise_std)
 
 
 if __name__ == "__main__":
-    create_dataset_main()
-
+    test_noise_transforms()
 
     # TODO: Denoising autoencoder skip connections
     # TODO: Augmentace dat
