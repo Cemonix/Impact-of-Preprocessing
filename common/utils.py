@@ -3,10 +3,10 @@ from pathlib import Path
 from typing import Dict, List, cast
 import os
 import random
-from flask.cli import F
 import numpy as np
 from PIL import Image
 from numpy import typing as npt
+from rich.progress import track
 
 from common import noise_transforms
 from common.configs.config import load_config
@@ -64,19 +64,27 @@ def create_dataset(
 
     dataset_info = {}
     random.shuffle(images_paths)
-    for idx, image_path in enumerate(images_paths):
+    for idx, image_path in track(
+        sequence=enumerate(images_paths),
+        description="Adding noise and moving images...",
+        total=len(images_paths)
+    ):
         image = load_image(image_path)
         chosen_noise_types = []
         if idx < len(images_paths) * 0.2:
-            image.save(save_dir / image_path.name)
-            dataset_info[image_path.stem] = "No noise applied"
-            continue
-        elif idx < len(images_paths) * 0.4:
             chosen_noise_types = [noise_types[0]]
-        elif idx < len(images_paths) * 0.6:
+        elif idx < len(images_paths) * 0.4:
             chosen_noise_types = [noise_types[1]]
-        elif idx < len(images_paths) * 0.8:
+        elif idx < len(images_paths) * 0.6:
             chosen_noise_types = [noise_types[2]]
+        elif idx < len(images_paths) * 0.8:
+            chosen_noise_types = random.choice(
+                [
+                    [noise_types[0], noise_types[1]],
+                    [noise_types[0], noise_types[2]],
+                    [noise_types[1], noise_types[2]]
+                ]
+            )
         else:
             chosen_noise_types = noise_types
         
@@ -98,6 +106,7 @@ def create_dataset(
 
     with open(save_dir / "dataset_info.json", "w") as json_file:
         json.dump({k: dataset_info[k] for k in sorted(dataset_info.keys())}, json_file)
+
 
 def choose_params_from_minmax(params: Dict[str, List[float]], show_chosen: bool = False) -> Dict[str, float]:
     selected_params = cast(Dict[str, float], params.copy())
