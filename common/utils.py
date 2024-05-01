@@ -26,6 +26,18 @@ def apply_noise_transform(
             return Image.fromarray(transform_method(image, **params))
     else:
         return Image.fromarray(image)
+    
+
+def apply_noises(
+        image: npt.NDArray, noise_types: List[str], noise_transform_config: Dict[str, Dict[str, List[float]]]
+) -> Image.Image:
+    noised_image = np.array(image).copy()
+    for noise_type in noise_types:
+        params = noise_transform_config[noise_type]
+        selected_params = choose_params_from_minmax(params)
+        noised_image = apply_noise_transform(np.array(noised_image), noise_type, selected_params)
+
+    return cast(Image.Image, noised_image)
 
 
 def apply_preprocessing(
@@ -88,11 +100,12 @@ def create_dataset(
         else:
             chosen_noise_types = noise_types
         
+        selected_params = []
         noised_image = np.array(image).copy()
-        for noise_type in chosen_noise_types:
+        for idx, noise_type in enumerate(chosen_noise_types):
             params = noise_transform_config[noise_type]
-            selected_params = choose_params_from_minmax(params)
-            noised_image = apply_noise_transform(np.array(noised_image), noise_type, selected_params)
+            selected_params.append(choose_params_from_minmax(params))
+            noised_image = apply_noise_transform(np.array(noised_image), noise_type, selected_params[idx])
 
         noised_image = cast(Image.Image, noised_image)
         noised_image.save(save_dir / image_path.name)
@@ -104,7 +117,7 @@ def create_dataset(
 
         dataset_info[image_path.stem] = info
 
-    with open(save_dir / "dataset_info.json", "w") as json_file:
+    with open("../" / save_dir / "dataset_info.json", "w") as json_file:
         json.dump({k: dataset_info[k] for k in sorted(dataset_info.keys())}, json_file)
 
 

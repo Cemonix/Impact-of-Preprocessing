@@ -3,11 +3,11 @@ model:
   learning_rate: 0.0001
 
 dataloader:
-  image_dir: "data/dataset/images/"
+  image_dir: "data/main_dataset/original_images/"
+  noised_image_dir: "data/main_dataset/final_images/"
   batch_size: 10
   num_workers: 12
   train_ratio: 0.8
-  noise_types: ["salt_and_pepper_noise"]
 
 training:
   accelerator: "cuda"

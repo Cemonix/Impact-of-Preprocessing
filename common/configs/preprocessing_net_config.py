@@ -11,10 +11,10 @@ class PreprocessingModelConfig(BaseModel):
 
 class PreprocessingDataLoaderConfig(BaseModel):
     image_dir: Path
+    noised_image_dir: Path
     batch_size: int
     num_workers: int
     train_ratio: float
-    noise_types: List[str]
 
 
 class PreprocessingTrainingConfig(BaseModel):

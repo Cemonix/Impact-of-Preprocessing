@@ -112,7 +112,7 @@ def test_unet_model() -> None:
 def train_preprocessing_model() -> None:
     # Parameters:
     # ---------------
-    architecture_type = "DenoisingAutoencoder"
+    architecture_type = "DnCNN"
     metrics = MetricCollection(
         {
             "PSNR": PeakSignalNoiseRatio(),
@@ -124,10 +124,6 @@ def train_preprocessing_model() -> None:
     preprocessing_config = cast(
         PreprocessingNetConfig,
         load_config(Path("configs/preprocessing_net_config.yaml")),
-    )
-    noise_transform_config = cast(
-        Dict[str, Dict[str, Any]],
-        load_config(Path("configs/noise_transforms_config.yaml")),
     )
 
     match architecture_type:
@@ -157,8 +153,7 @@ def train_preprocessing_model() -> None:
 
     datamodule = PreprocessingDataModule(
         image_dir=preprocessing_config.dataloader.image_dir,
-        noise_transform_config=noise_transform_config,
-        noise_types=preprocessing_config.dataloader.noise_types,
+        noised_image_dir=preprocessing_config.dataloader.noised_image_dir,
         batch_size=preprocessing_config.dataloader.batch_size,
         num_of_workers=preprocessing_config.dataloader.num_workers,
         train_ratio=preprocessing_config.dataloader.train_ratio,
@@ -181,9 +176,9 @@ def train_preprocessing_model() -> None:
 def test_preprocessing_model() -> None:
     # Parameters:
     # ---------------
-    images = load_image(Path("data/dataset/images/CHNCXR_0005_0.png"))
+    images = load_image(Path("data/main_dataset/original_images/CHNCXR_0005_0.png"))
     path_to_checkpoint = Path(
-        "lightning_logs/dncnn_model_v0_512/checkpoints/epoch=49-step=750.ckpt"
+        "lightning_logs/version_2/checkpoints/epoch=9-step=3200.ckpt"
     )
     transformations = transforms.Compose(
         [
@@ -192,7 +187,7 @@ def test_preprocessing_model() -> None:
         ]
     )
     model_params = model_params = {"architecture_type": DnCNN}
-    noise_type = "poisson_noise"
+    noise_types = ["speckle_noise", "poisson_noise", "salt_and_pepper_noise"]
     # ---------------
 
     if isinstance(images, Image.Image):
@@ -203,11 +198,12 @@ def test_preprocessing_model() -> None:
         load_config(Path("configs/noise_transforms_config.yaml")),
     )
     dncnn_inference = PreprocessingInference(
-        model_type=PreprocessingModel,
+        model_type=DnCNN,
         path_to_checkpoint=path_to_checkpoint,
         transformations=transformations,
         noise_transform_config=noise_transform_config,
-        noise_type=noise_type,
+        noise_types=noise_types,
+        metrics=None,
         **model_params,
     )
     dncnn_inference.inference_display(images)
@@ -320,8 +316,9 @@ def statistics() -> None:
 
 
 if __name__ == "__main__":
-    test_noise_transforms()
+    test_preprocessing_model()
 
+    # TODO: Loss - https://github.com/francois-rozet/piqa | https://stackoverflow.com/questions/53956932/use-pytorch-ssim-loss-function-in-my-model
     # TODO: Denoising autoencoder skip connections
     # TODO: Augmentace dat
     # TODO: VAE
