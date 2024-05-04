@@ -2,6 +2,7 @@ from typing import Tuple, cast
 import numpy as np
 from numpy import typing as npt
 from skimage import exposure, filters, restoration
+from skimage.util import img_as_float
 from scipy.ndimage import generic_filter, median_filter
 
 
@@ -109,7 +110,9 @@ def apply_wiener_filter(image: npt.NDArray, balance: float = 0.1) -> npt.NDArray
     return restoration.wiener(image, psf, balance, clip=False)  # type: ignore
 
 
-def apply_median_filter(image: npt.NDArray, kernel_size: int = 3) -> npt.NDArray[np.uint8]:
+def apply_median_filter(
+    image: npt.NDArray, kernel_size: int = 3
+) -> npt.NDArray[np.uint8]:
     """
     Apply a median filter to an image using scipy.
 
@@ -125,8 +128,10 @@ def apply_median_filter(image: npt.NDArray, kernel_size: int = 3) -> npt.NDArray
 
 
 def apply_bilateral_filter(
-    image: npt.NDArray, sigma_color: float = 0.05, sigma_spatial: float = 1.5,
-    bins: int = 127
+    image: npt.NDArray,
+    sigma_color: float = 0.05,
+    sigma_spatial: float = 1.5,
+    bins: int = 127,
 ) -> npt.NDArray[np.uint8]:
     processed_image = restoration.denoise_bilateral(
         image, sigma_color=sigma_color, sigma_spatial=sigma_spatial, bins=bins
@@ -187,7 +192,8 @@ def apply_frost_filter(
 ) -> np.ndarray:
     """
     Source: https://ieeexplore.ieee.org/document/8844702
-    """ 
+    """
+
     def compute_Q(patch: npt.NDArray[np.float64], i: int, j: int) -> np.float64:
         N = patch.shape[0] // 2
         center_pixel = patch[N, N]
@@ -216,7 +222,7 @@ def apply_frost_filter(
         local_std = np.std(patch)
 
         T_t0 = np.abs(center_pixel - local_mean) / local_std if local_std != 0 else 0
-      
+
         # Compute weights
         weights = np.zeros_like(patch)
         for i in range(window_size):
@@ -237,3 +243,29 @@ def apply_frost_filter(
     )
     filtered_image_uint8 = np.clip(filtered_image_float, 0, 255).astype(np.uint8)
     return filtered_image_uint8
+
+
+def apply_wavelet_denoise_filter(
+    image: npt.NDArray[np.float64],
+    wavelet: str = "db1",
+    mode: str = "soft",
+) -> npt.NDArray[np.float64]:
+    """
+    Apply wavelet denoising to an image.
+
+    Args:
+    image (npt.NDArray[np.float64]): The input image as a numpy array (2D for grayscale or 3D for RGB).
+    wavelet (str): The type of wavelet to use ('db1', 'db2', etc.).
+    mode (str): Thresholding mode ('soft' or 'hard') used in wavelet thresholding.
+
+    Returns:
+    npt.NDArray[np.float64]: The denoised image as a numpy array.
+    """
+    if image.dtype != np.float64:
+        image = img_as_float(image)
+
+    processed_image = restoration.denoise_wavelet(
+        image, wavelet=wavelet, mode=mode
+    )
+
+    return (processed_image * 255).astype(np.uint8)

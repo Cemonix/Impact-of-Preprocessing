@@ -290,7 +290,7 @@ def test_preproccesing_ensemble_method() -> None:
     # Parameters:
     # ---------------
     image = load_image(Path("data/LungSegmentation/CXR_png/CHNCXR_0005_0.png"))
-    noise_types = ["speckle_noise" , "poisson_noise", "salt_and_pepper_noise"]
+    noise_types = ["speckle_noise", "poisson_noise", "salt_and_pepper_noise"]
     resize = (256, 256)
     # ---------------
 
@@ -351,7 +351,6 @@ def statistics() -> None:
 
 
 if __name__ == "__main__":
-    # test_standard_preproccesing_methods()
     test_preproccesing_ensemble_method()
 
     # TODO: Natrénovat UNet na hlavní datové sadě
