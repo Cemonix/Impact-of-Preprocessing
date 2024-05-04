@@ -37,5 +37,5 @@ frost_filter:
   initial_K: 0.6
 
 wavelet_denoise_filter:
-  wavelet: 'db1'
-  mode: 'soft'
+  wavelet: "db1"
+  mode: "soft"
