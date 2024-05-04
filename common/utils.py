@@ -1,6 +1,6 @@
 import json
 from pathlib import Path
-from typing import Dict, List, cast
+from typing import Dict, List, Optional, cast
 import os
 import random
 import numpy as np
@@ -29,15 +29,36 @@ def apply_noise_transform(
     
 
 def apply_noises(
-        image: npt.NDArray, noise_types: List[str], noise_transform_config: Dict[str, Dict[str, List[float]]]
+    image: npt.NDArray,
+    noise_types: List[str],
+    noise_transform_config: Dict[str, Dict[str, List[float]]],
+    show_chosen: bool = False
 ) -> Image.Image:
     noised_image = np.array(image).copy()
     for noise_type in noise_types:
         params = noise_transform_config[noise_type]
-        selected_params = choose_params_from_minmax(params)
+        selected_params = choose_params_from_minmax(
+            params, noise_type=noise_type, show_chosen=show_chosen
+        )
         noised_image = apply_noise_transform(np.array(noised_image), noise_type, selected_params)
 
     return cast(Image.Image, noised_image)
+
+
+def choose_params_from_minmax(
+    params: Dict[str, List[float]], noise_type: Optional[str] = None, show_chosen: bool = False
+) -> Dict[str, float]:
+    selected_params = cast(Dict[str, float], params.copy())
+    for key, value in params.items():
+        chosen_value = np.random.uniform(value[0], value[1], size=None)
+        if show_chosen:
+            if noise_type is not None:
+                print(f"Chosen value for {noise_type} with {key}: {chosen_value}")
+            else:
+                print(f"Chosen value for {key}: {chosen_value}")
+        selected_params[key] = chosen_value
+
+    return selected_params
 
 
 def apply_preprocessing(
@@ -119,14 +140,3 @@ def create_dataset(
 
     with open("../" / save_dir / "dataset_info.json", "w") as json_file:
         json.dump({k: dataset_info[k] for k in sorted(dataset_info.keys())}, json_file)
-
-
-def choose_params_from_minmax(params: Dict[str, List[float]], show_chosen: bool = False) -> Dict[str, float]:
-    selected_params = cast(Dict[str, float], params.copy())
-    for key, value in params.items():
-        chosen_value = np.random.uniform(value[0], value[1], size=None)
-        if show_chosen:
-            print(f"Chosen value for {key}: {chosen_value}")
-        selected_params[key] = chosen_value
-
-    return selected_params

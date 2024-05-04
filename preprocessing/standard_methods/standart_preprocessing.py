@@ -1,7 +1,9 @@
+from typing import cast
 import numpy as np
 from numpy import typing as npt
 from skimage import exposure, filters, restoration
 from scipy.ndimage import generic_filter
+
 
 def apply_histogram_equalization(image: npt.NDArray) -> npt.NDArray:
     """
@@ -71,16 +73,17 @@ def apply_gaussian_filter(image: npt.NDArray, sigma: int = 1) -> npt.NDArray:
 
 def apply_wiener_filter(image: npt.NDArray, balance: float = 0.1) -> npt.NDArray:
     """Apply Wiener filter for image deconvolution.
-    
+
     Args:
         image (npt.NDArray): The input image array.
         psf (npt.NDArray): The point spread function.
         balance (float): The regularization parameter.
         clip (bool): Whether to clip the output to the range [0, 1].
-        
+
     Returns:
         npt.NDArray: The deconvolved image, scaled and cast to uint8.
     """
+
     def create_gaussian_psf(size: int = 5, sigma: float = 1.0) -> npt.NDArray:
         """Create a Gaussian PSF.
 
@@ -93,17 +96,17 @@ def apply_wiener_filter(image: npt.NDArray, balance: float = 0.1) -> npt.NDArray
         """
         if size % 2 == 0:
             size += 1
-        
+
         ax = np.arange(-size // 2 + 1.0, size // 2 + 1.0)
         xx, yy = np.meshgrid(ax, ax)
 
         # Gaussian formula
-        kernel = np.exp(-(xx**2 + yy**2) / (2. * sigma**2))
+        kernel = np.exp(-(xx**2 + yy**2) / (2.0 * sigma**2))
 
         return kernel / np.sum(kernel)
 
     psf = create_gaussian_psf()
-    return restoration.wiener(image, psf, balance, clip=False) # type: ignore
+    return restoration.wiener(image, psf, balance, clip=False)  # type: ignore
 
 
 def apply_bilateral_filter(
@@ -134,6 +137,7 @@ def apply_local_adaptive_median_filter(
     Returns:
         npt.NDArray: The filtered image.
     """
+
     # Helper function to process each window
     def filter_func(window: npt.NDArray) -> np.floating:
         center = window[len(window) // 2]
@@ -143,16 +147,77 @@ def apply_local_adaptive_median_filter(
         sigma = np.sqrt(np.sum((window - mu) ** 2) / N)
         LB = mu - multiplier * sigma
         UB = mu + multiplier * sigma
-        
+
         # Create a mask for valid pixels within the bounds
         valid_mask = (window >= LB) & (window <= UB)
         valid_values = window[valid_mask]
-        
-        if len(valid_values) == 0:  # If no valid values, return the median of the whole window
+
+        if (
+            len(valid_values) == 0
+        ):  # If no valid values, return the median of the whole window
             return np.median(window)
         else:
             return np.median(valid_values) if (center < LB or center > UB) else center
 
-    filtered_image = generic_filter(image, filter_func, size=(2*radius+1, 2*radius+1))
+    filtered_image = generic_filter(
+        image, filter_func, size=(2 * radius + 1, 2 * radius + 1)
+    )
 
     return filtered_image
+
+
+def apply_frost_filter(
+    input_image: np.ndarray, window_size: int = 3, initial_K: float = 1.0
+) -> np.ndarray:
+    """
+    Source: https://ieeexplore.ieee.org/document/8844702
+    """ 
+    def compute_Q(patch: npt.NDArray[np.float64], i: int, j: int) -> np.float64:
+        N = patch.shape[0] // 2
+        center_pixel = patch[N, N]
+        current_pixel = patch[i, j]
+
+        # Numerator: Absolute difference between current pixel and center pixel
+        numerator = cast(np.float64, np.abs(current_pixel - center_pixel))
+
+        # Denominator: Sum of absolute differences from center pixel, excluding the center itself
+        abs_diffs = cast(npt.NDArray[np.float64], np.abs(patch - center_pixel))
+        abs_diffs[N, N] = 0  # Exclude the center pixel from the sum
+        total_pixels = (2 * N + 1) ** 2 - 1
+        denominator = np.sum(abs_diffs) / total_pixels
+
+        Q = numerator / denominator if denominator != 0 else 0
+        return cast(np.float64, Q)
+
+    def adaptive_kernel(P: np.ndarray) -> float:
+        # Reshape to window size
+        patch = P.reshape(window_size, window_size)
+        N = window_size // 2
+        center_pixel = patch[N, N]
+
+        # Calculate local statistics
+        local_mean = np.mean(patch)
+        local_std = np.std(patch)
+
+        T_t0 = np.abs(center_pixel - local_mean) / local_std if local_std != 0 else 0
+      
+        # Compute weights
+        weights = np.zeros_like(patch)
+        for i in range(window_size):
+            for j in range(window_size):
+                Q_sh = compute_Q(patch, i, j)
+                K = initial_K * T_t0 * Q_sh
+                d_sh = np.sqrt((i - N) ** 2 + (j - N) ** 2)
+                weights[i, j] = np.exp(-K * d_sh)
+
+        # Normalize weights and compute output
+        weights /= np.sum(weights)
+        output = np.sum(weights * patch)
+        return output
+
+    input_image_float = input_image.astype(np.float64)
+    filtered_image_float = generic_filter(
+        input_image_float, adaptive_kernel, size=(window_size, window_size)
+    )
+    filtered_image_uint8 = np.clip(filtered_image_float, 0, 255).astype(np.uint8)
+    return filtered_image_uint8

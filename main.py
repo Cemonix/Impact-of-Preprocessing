@@ -16,6 +16,7 @@ from common.configs.unet_config import UnetConfig
 from common.configs.preprocessing_net_config import PreprocessingNetConfig
 from common.utils import (
     apply_noise_transform,
+    apply_noises,
     apply_preprocessing,
     choose_params_from_minmax,
     create_dataset,
@@ -235,13 +236,9 @@ def test_noise_transforms() -> None:
         )
 
     # All noise application
-    noised_image = image
-    for noise_type in noise_types:
-        params = noise_transform_config[noise_type]
-        selected_params = choose_params_from_minmax(params, show_chosen=True)
-        noised_image = apply_noise_transform(
-            np.array(noised_image), noise_type, selected_params
-        )
+    noised_image = apply_noises(
+        np.array(image), noise_types, noise_transform_config, True
+    )
 
     compare_images(
         images=[image, noised_image],
@@ -250,39 +247,40 @@ def test_noise_transforms() -> None:
     )
 
 
-def test_preproccesing_methods() -> None:
+def test_standart_preproccesing_methods() -> None:
     # Parameters:
     # ---------------
-    image = np.array(load_image(Path("data/dataset/images/CHNCXR_0005_0.png")))
-    noise_type = "poisson_noise"
+    image = load_image(Path("data/LungSegmentation/CXR_png/CHNCXR_0005_0.png"))
+    noise_types = ["speckle_noise", "poisson_noise", "salt_and_pepper_noise"]
+    resize = (256, 256)
     # ---------------
+    image = image.resize(resize)
 
     noise_transform_config = cast(
         Dict[str, Dict[str, Any]],
         load_config(Path("configs/noise_transforms_config.yaml")),
     )
-    params = noise_transform_config[noise_type]
-    noised_image = apply_noise_transform(np.array(image).copy(), noise_type, params)
+    noised_image = apply_noises(
+        np.array(image), noise_types, noise_transform_config, True
+    )
 
     preprocessing_config = cast(
         Dict[str, Dict[str, Any]],
         load_config(Path("configs/standard_preprocessing_config.yaml")),
     )
     preprocess_methods = list(preprocessing_config.keys())
-
-    preprocessed_images = [
-        Image.fromarray(image),
-        Image.fromarray(noised_image),
-    ]
+    preprocessed_images = [image, noised_image]
 
     for method in preprocess_methods:
         params = preprocessing_config[method]
-        preprocessed_images.append(apply_preprocessing(image, method, params))
+        preprocessed_images.append(
+            apply_preprocessing(np.array(noised_image), method, params)
+        )
 
     titles = [
         "Originální snímek",
-        f"Zašuměný snímek: {noise_type}",
-        *preprocess_methods,
+        "Zašuměný snímek",
+        "Odfiltrovaný snímek",
     ]
     compare_images(images=preprocessed_images, titles=titles, images_per_column=3)
 
@@ -316,7 +314,14 @@ def statistics() -> None:
 
 
 if __name__ == "__main__":
-    test_preprocessing_model()
+    test_standart_preproccesing_methods()
+
+    # TODO: Natrénovat UNet na hlavní datové sadě
+
+    # TODO: Vyzkoušet všechny klasické filtrovací algoritmy a nastavit parametry
+    # TODO: Vytvořit metodu na aplikaci několika filtrů a zprůměrování
+    # TODO: Vytvořit datovou sadu s využitím klasických filtrovacích technik
+    # TODO: Natrénovat UNet na této datové sadě a porovnat výsledky s UNetem bez filtrů
 
     # TODO: Loss - https://github.com/francois-rozet/piqa | https://stackoverflow.com/questions/53956932/use-pytorch-ssim-loss-function-in-my-model
     # TODO: Denoising autoencoder skip connections
