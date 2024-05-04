@@ -6,6 +6,7 @@ from skimage.util import img_as_float
 from scipy.ndimage import generic_filter, median_filter
 import numba
 
+
 def apply_histogram_equalization(image: npt.NDArray) -> npt.NDArray:
     """
     Perform histogram equalization on a grayscale image.
@@ -144,9 +145,31 @@ def apply_non_local_means(image: npt.NDArray, h: float = 1.0) -> npt.NDArray:
     return (processed_image * 255).astype(np.uint8)
 
 
+@numba.jit(nopython=True)
+def __local_adaptive_median_filter_func(
+    window: npt.NDArray[np.float64], multiplier: float
+) -> np.float64:
+    center = window[len(window) // 2]
+    S = np.sum(window)
+    N = len(window)
+    mu = S / N
+    sigma = np.sqrt(np.sum((window - mu) ** 2) / N)
+    LB = mu - multiplier * sigma
+    UB = mu + multiplier * sigma
+
+    # Create a mask for valid pixels within the bounds
+    valid_mask = (window >= LB) & (window <= UB)
+    valid_values = window[valid_mask]
+
+    if len(valid_values) == 0:
+        return np.median(window)
+    else:
+        return np.median(valid_values) if (center < LB or center > UB) else center
+
+
 def apply_local_adaptive_median_filter(
-    image: npt.NDArray, radius: int = 1, multiplier: float = 1.0
-) -> npt.NDArray:
+    image: npt.NDArray[np.float64], radius: int = 1, multiplier: float = 1.0
+) -> npt.NDArray[np.float64]:
     """
     Apply a local adaptive median filter to an image.
 
@@ -158,37 +181,17 @@ def apply_local_adaptive_median_filter(
     Returns:
         npt.NDArray: The filtered image.
     """
-
-    # Helper function to process each window
-    def filter_func(window: npt.NDArray) -> np.floating:
-        center = window[len(window) // 2]
-        S = np.sum(window)
-        N = (2 * radius + 1) ** 2
-        mu = S / N
-        sigma = np.sqrt(np.sum((window - mu) ** 2) / N)
-        LB = mu - multiplier * sigma
-        UB = mu + multiplier * sigma
-
-        # Create a mask for valid pixels within the bounds
-        valid_mask = (window >= LB) & (window <= UB)
-        valid_values = window[valid_mask]
-
-        if (
-            len(valid_values) == 0
-        ):  # If no valid values, return the median of the whole window
-            return np.median(window)
-        else:
-            return np.median(valid_values) if (center < LB or center > UB) else center
-
+    size = 2 * radius + 1
     filtered_image = generic_filter(
-        image, filter_func, size=(2 * radius + 1, 2 * radius + 1)
+        image, __local_adaptive_median_filter_func,
+        size=(size, size),
+        extra_arguments=(multiplier,)
     )
-
     return filtered_image
 
 
 @numba.jit(nopython=True)
-def compute_weights(
+def __compute_weights(
     patch: npt.NDArray, N: int, initial_K: float, local_mean: np.float64, local_std: np.float64
 ) -> npt.NDArray[np.float64]:
     center_pixel = patch[N, N]
@@ -222,7 +225,7 @@ def apply_frost_filter(
         N = window_size // 2
         local_mean = np.mean(patch)
         local_std = np.std(patch)
-        weights = compute_weights(patch, N, initial_K, local_mean, local_std)
+        weights = __compute_weights(patch, N, initial_K, local_mean, local_std)
         weights /= np.sum(weights)
         return np.sum(weights * patch)
 
