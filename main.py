@@ -17,9 +17,10 @@ from common.configs.preprocessing_net_config import PreprocessingNetConfig
 from common.utils import (
     apply_noise_transform,
     apply_noises,
-    apply_preprocessing,
+    apply_standard_preprocessing,
     choose_params_from_minmax,
     create_dataset,
+    standard_preprocessing_ensemble_averaging,
 )
 from common.visualization import compare_images
 from preprocessing.neural_networks.dncnn import DnCNN
@@ -247,14 +248,13 @@ def test_noise_transforms() -> None:
     )
 
 
-def test_standart_preproccesing_methods() -> None:
+def test_standard_preproccesing_methods() -> None:
     # Parameters:
     # ---------------
     image = load_image(Path("data/LungSegmentation/CXR_png/CHNCXR_0005_0.png"))
     noise_types = ["speckle_noise", "poisson_noise", "salt_and_pepper_noise"]
     resize = (256, 256)
     # ---------------
-    image = image.resize(resize)
 
     noise_transform_config = cast(
         Dict[str, Dict[str, Any]],
@@ -262,20 +262,57 @@ def test_standart_preproccesing_methods() -> None:
     )
     noised_image = apply_noises(
         np.array(image), noise_types, noise_transform_config, True
-    )
+    ).resize(resize)
 
     preprocessing_config = cast(
         Dict[str, Dict[str, Any]],
         load_config(Path("configs/standard_preprocessing_config.yaml")),
     )
-    preprocess_methods = list(preprocessing_config.keys())
-    preprocessed_images = [image, noised_image]
+    preprocessed_images = [image.resize(resize), noised_image]
 
-    for method in preprocess_methods:
-        params = preprocessing_config[method]
-        preprocessed_images.append(
-            apply_preprocessing(np.array(noised_image), method, params)
+    titles = [
+        "Originální snímek",
+        "Zašuměný snímek",
+        "Odfiltrovaný snímek",
+    ]
+    for method, params in preprocessing_config.items():
+        preprocessed_image = apply_standard_preprocessing(
+            np.array(noised_image), method, params
         )
+        compare_images(
+            images=[*preprocessed_images, preprocessed_image],
+            titles=titles,
+            images_per_column=3,
+        )
+
+
+def test_preproccesing_ensemble_method() -> None:
+    # Parameters:
+    # ---------------
+    image = load_image(Path("data/LungSegmentation/CXR_png/CHNCXR_0005_0.png"))
+    noise_types = ["speckle_noise" , "poisson_noise", "salt_and_pepper_noise"]
+    resize = (256, 256)
+    # ---------------
+
+    noise_transform_config = cast(
+        Dict[str, Dict[str, Any]],
+        load_config(Path("configs/noise_transforms_config.yaml")),
+    )
+    noised_image = apply_noises(
+        np.array(image), noise_types, noise_transform_config, True
+    ).resize(resize)
+
+    preprocessing_config = cast(
+        Dict[str, Dict[str, Any]],
+        load_config(Path("configs/standard_preprocessing_config.yaml")),
+    )
+    preprocessed_images = [image.resize(resize), noised_image]
+
+    preprocessed_images.append(
+        standard_preprocessing_ensemble_averaging(
+            np.array(noised_image), preprocessing_config
+        )
+    )
 
     titles = [
         "Originální snímek",
@@ -314,12 +351,12 @@ def statistics() -> None:
 
 
 if __name__ == "__main__":
-    test_standart_preproccesing_methods()
+    # test_standard_preproccesing_methods()
+    test_preproccesing_ensemble_method()
 
     # TODO: Natrénovat UNet na hlavní datové sadě
 
     # TODO: Vyzkoušet všechny klasické filtrovací algoritmy a nastavit parametry
-    # TODO: Vytvořit metodu na aplikaci několika filtrů a zprůměrování
     # TODO: Vytvořit datovou sadu s využitím klasických filtrovacích technik
     # TODO: Natrénovat UNet na této datové sadě a porovnat výsledky s UNetem bez filtrů
 

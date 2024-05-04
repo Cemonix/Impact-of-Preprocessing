@@ -17,17 +17,21 @@
 # wiener_filter:
 #   balance: 0.1
 
+median_filter:
+  kernel_size: 3
+
 # bilateral_filter:
-#   sigma_color: 0.02
-#   sigma_spatial: 10
+#   sigma_color: 0.4
+#   sigma_spatial: 0.6
+#   bins: 64
 
-# non_local_means:
-#   h: 0.2
+non_local_means:
+  h: 0.018
 
-# local_adaptive_median_filter:
-#   radius: 2
-#   multiplier: 0.2
+local_adaptive_median_filter:
+  radius: 5
+  multiplier: 1.0
 
-frost_filter:
-  window_size: 7
-  initial_K: 0.6
+# frost_filter:
+#   window_size: 7
+#   initial_K: 0.6

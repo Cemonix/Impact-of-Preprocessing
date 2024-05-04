@@ -1,8 +1,8 @@
-from typing import cast
+from typing import Tuple, cast
 import numpy as np
 from numpy import typing as npt
 from skimage import exposure, filters, restoration
-from scipy.ndimage import generic_filter
+from scipy.ndimage import generic_filter, median_filter
 
 
 def apply_histogram_equalization(image: npt.NDArray) -> npt.NDArray:
@@ -109,11 +109,27 @@ def apply_wiener_filter(image: npt.NDArray, balance: float = 0.1) -> npt.NDArray
     return restoration.wiener(image, psf, balance, clip=False)  # type: ignore
 
 
+def apply_median_filter(image: npt.NDArray, kernel_size: int = 3) -> npt.NDArray[np.uint8]:
+    """
+    Apply a median filter to an image using scipy.
+
+    Args:
+    image (npt.NDArray): The input image.
+    kernel_size (int): The size of the neighborhood expressed as a single integer or a tuple of two integers.
+
+    Returns:
+    npt.NDArray: The denoised image.
+    """
+    processed_image = median_filter(image, size=kernel_size)
+    return processed_image
+
+
 def apply_bilateral_filter(
-    image: npt.NDArray, sigma_color: float = 0.05, sigma_spatial: int = 15
-) -> npt.NDArray:
+    image: npt.NDArray, sigma_color: float = 0.05, sigma_spatial: float = 1.5,
+    bins: int = 127
+) -> npt.NDArray[np.uint8]:
     processed_image = restoration.denoise_bilateral(
-        image, sigma_color=sigma_color, sigma_spatial=sigma_spatial
+        image, sigma_color=sigma_color, sigma_spatial=sigma_spatial, bins=bins
     )
     return (processed_image * 255).astype(np.uint8)
 
