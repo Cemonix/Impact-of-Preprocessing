@@ -324,8 +324,8 @@ def test_preproccesing_ensemble_method() -> None:
 def measure_metrics_for_images() -> None:
     # Parameters:
     # ---------------
-    prediction = load_image(Path("data/main_dataset/original_images/CHNCXR_0005_0.png"))
-    target  = load_image(Path("data/main_dataset/final_images/CHNCXR_0005_0.png"))
+    prediction = load_image(Path("data/main_dataset/final_images/CHNCXR_0005_0.png"))
+    target  = load_image(Path("data/main_dataset/original_images/CHNCXR_0005_0.png"))
     metrics = MetricCollection(
         {
             "PSNR": PeakSignalNoiseRatio(),
@@ -371,7 +371,7 @@ def measure_noise_std() -> None:
 
 
 if __name__ == "__main__":
-    test_preproccesing_ensemble_method()
+    measure_metrics_for_images()
 
     # TODO: Natrénovat UNet na hlavní datové sadě
 

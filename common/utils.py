@@ -98,8 +98,10 @@ def standard_preprocessing_ensemble_averaging(
 
 
 def metrics_calculation(
-    predictions: List[Image.Image] | Image.Image, targets: List[Image.Image]  | Image.Image,
-    metrics: MetricCollection, transformations: transforms.Compose | None = None
+    predictions: List[Image.Image] | Image.Image,
+    targets: List[Image.Image] | Image.Image,
+    metrics: MetricCollection,
+    transformations: transforms.Compose | None = None,
 ) -> None:
     if isinstance(predictions, Image.Image):
         predictions = [predictions]
@@ -109,11 +111,11 @@ def metrics_calculation(
 
     if len(predictions) != len(targets):
         raise Exception(f"Predictions has not same size as targets")
-    
+
     if transformations is None:
         transformations = transforms.Compose([transforms.ToTensor()])
 
     for predition, target in zip(predictions, targets):
         predition_tensor = cast(torch.Tensor, transformations(predition))
         target_tensor = cast(torch.Tensor, transformations(target))
-        print(metrics(predition_tensor, target_tensor))
+        print(metrics(predition_tensor.unsqueeze(0), target_tensor.unsqueeze(0)))
