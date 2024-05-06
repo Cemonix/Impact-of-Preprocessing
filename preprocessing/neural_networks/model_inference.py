@@ -43,7 +43,8 @@ class PreprocessingInference(ModelInference):
                 ]
             )
 
-            print(self.metrics(image_tensor.unsqueeze(0), prediction))
+            print(f"Noised image metrics: {self.metrics(noised_tensor, image_tensor.unsqueeze(0))}")
+            print(f"Model prediction metrics: {self.metrics(prediction, image_tensor.unsqueeze(0))}")
 
         compare_images(
             images_for_display, ["Original image", "Noised image", "Prediction"]

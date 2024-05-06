@@ -37,8 +37,8 @@ class LungSegmentationDataset(Dataset):
         Returns:
             tuple: (image, mask) where both are transformed tensors.
         """
-        img_path = os.path.join(self.image_dir, self.images[idx])
-        mask_path = os.path.join(self.mask_dir, self.images[idx].replace(".png", "_mask.png"))
+        img_path = self.image_dir / self.images[idx]
+        mask_path = self.mask_dir / self.images[idx]
 
         image = Image.open(img_path).convert("L")
         mask = Image.open(mask_path).convert("L")

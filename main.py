@@ -20,7 +20,7 @@ from common.utils import (
     apply_standard_preprocessing,
     choose_params_from_minmax,
     standard_preprocessing_ensemble_averaging,
-    metrics_calculation
+    metrics_calculation,
 )
 from common.visualization import compare_images
 from preprocessing.neural_networks.dncnn import DnCNN
@@ -179,7 +179,7 @@ def test_preprocessing_model() -> None:
     # ---------------
     images = load_image(Path("data/main_dataset/original_images/CHNCXR_0005_0.png"))
     path_to_checkpoint = Path(
-        "lightning_logs/version_2/checkpoints/epoch=9-step=3200.ckpt"
+        "lightning_logs/DNCNN_main_dataset/checkpoints/epoch=55-step=17920.ckpt"
     )
     transformations = transforms.Compose(
         [
@@ -371,7 +371,7 @@ def measure_noise_std() -> None:
 
 
 if __name__ == "__main__":
-    measure_metrics_for_images()
+    test_preprocessing_model()
 
     # TODO: Natrénovat UNet na hlavní datové sadě
 
