@@ -9,7 +9,7 @@ from torchvision.transforms import transforms
 from pytorch_lightning import Trainer
 import mlflow.pytorch
 
-from common.data_manipulation import load_image
+from common.data_manipulation import load_image, create_dataset
 from common.visualization import plot
 from common.configs.config import load_config
 from common.configs.unet_config import UnetConfig
@@ -19,15 +19,14 @@ from common.utils import (
     apply_noises,
     apply_standard_preprocessing,
     choose_params_from_minmax,
-    create_dataset,
     standard_preprocessing_ensemble_averaging,
+    metrics_calculation
 )
 from common.visualization import compare_images
 from preprocessing.neural_networks.dncnn import DnCNN
 from preprocessing.neural_networks.dae import DenoisingAutoencoder
 from preprocessing.neural_networks.vae import VariationalAutoencoder
 from preprocessing.neural_networks.data_module import PreprocessingDataModule
-from preprocessing.neural_networks.model import PreprocessingModel
 from preprocessing.neural_networks.model_inference import PreprocessingInference
 from statistics_methods.statistics import estimate_noise_in_image
 from unet.data_module import LungSegmentationDataModule
@@ -322,7 +321,28 @@ def test_preproccesing_ensemble_method() -> None:
     compare_images(images=preprocessed_images, titles=titles, images_per_column=3)
 
 
-def statistics() -> None:
+def measure_metrics_for_images() -> None:
+    # Parameters:
+    # ---------------
+    prediction = load_image(Path("data/main_dataset/original_images/CHNCXR_0005_0.png"))
+    target  = load_image(Path("data/main_dataset/final_images/CHNCXR_0005_0.png"))
+    metrics = MetricCollection(
+        {
+            "PSNR": PeakSignalNoiseRatio(),
+            "SSIM": StructuralSimilarityIndexMeasure(),
+        }
+    )
+    transformations = transforms.Compose(
+        [
+            transforms.Resize((256, 256)),
+            transforms.ToTensor(),
+        ]
+    )
+    # ---------------
+    metrics_calculation(prediction, target, metrics, transformations)
+
+
+def measure_noise_std() -> None:
     # Parameters:
     # ---------------
     image = load_image(Path("data/dataset/images/CHNCXR_0005_0.png"))
