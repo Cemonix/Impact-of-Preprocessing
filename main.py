@@ -5,17 +5,22 @@ import numpy as np
 from numpy import typing as npt
 from PIL import Image
 from rich.progress import track
-from torchmetrics import MetricCollection
+from torch import nn
+from torchmetrics import JaccardIndex, MetricCollection
 from torchmetrics.image import PeakSignalNoiseRatio, StructuralSimilarityIndexMeasure
 from torchvision.transforms import transforms
 from torchvision.transforms.functional import to_pil_image
 from pytorch_lightning import Trainer
 import mlflow.pytorch
 
-from common.data_manipulation import load_image, create_dataset
+from common.data_manipulation import (
+    create_mask_from_annotation,
+    load_image,
+    create_noised_dataset,
+)
 from common.visualization import plot
 from common.configs.config import load_config
-from common.configs.unet_config import UnetConfig
+from common.configs.unet_config import UNetConfig
 from common.configs.preprocessing_net_config import PreprocessingNetConfig
 from common.utils import (
     apply_noise_transform,
@@ -32,19 +37,19 @@ from preprocessing.neural_networks.vae import VariationalAutoencoder
 from preprocessing.neural_networks.data_module import PreprocessingDataModule
 from preprocessing.neural_networks.model_inference import PreprocessingInference
 from statistics_methods.statistics import estimate_noise_in_image
-from unet.data_module import LungSegmentationDataModule
-from unet.unet import UNetModel
+from unet.data_module import LungSegmentationDataModule, TeethSegmentationDataModule
+from unet.unet import BinaryUNetModel, MulticlassUNetModel
 from unet.model_inference import UnetInference
 
 
 def create_dataset_main() -> None:
     # Parameters:
     # ---------------
-    image_dir = Path("data/main_dataset/original_images")
-    save_dir = Path("data/main_dataset/final_images")
+    image_dir = Path("data/TeethSegmentation/chosen_images")
+    save_dir = Path("data/TeethSegmentation/noised_images")
     walk_recursive = False
     # ---------------
-    create_dataset(image_dir, save_dir, walk_recursive)
+    create_noised_dataset(image_dir, save_dir, walk_recursive)
 
 
 def apply_model_and_create_dataset() -> None:
@@ -93,17 +98,17 @@ def train_unet_model() -> None:
     metrics = None
     transformations = transforms.Compose(
         [
-            # transforms.Resize((256, 256)),
+            transforms.Resize((256, 256)),
             transforms.ToTensor(),
         ]
     )
     # ---------------
 
-    unet_config: UnetConfig = cast(
-        UnetConfig, load_config(Path("configs/unet_config.yaml"))
+    unet_config: UNetConfig = cast(
+        UNetConfig, load_config(Path("configs/unet_config.yaml"))
     )
 
-    model = UNetModel(
+    model = BinaryUNetModel(
         n_channels=unet_config.model.n_channels,
         n_classes=unet_config.model.n_classes,
         learning_rate=unet_config.model.learning_rate,
@@ -127,7 +132,7 @@ def train_unet_model() -> None:
 
     mlflow.pytorch.autolog(log_every_n_step=unet_config.training.log_every_n_steps)
 
-    with mlflow.start_run(run_name="UNet"):
+    with mlflow.start_run(run_name="BinaryUNet"):
         trainer.fit(model, datamodule=datamodule)
 
 
@@ -155,11 +160,61 @@ def test_unet_model() -> None:
         targets = [targets]
 
     unet_inference = UnetInference(
-        model_type=UNetModel,
+        model_type=BinaryUNetModel,
         path_to_checkpoint=path_to_checkpoint,
         transformations=transformations,
     )
     unet_inference.inference_display(images, targets)
+
+
+def train_multiclass_unet_model() -> None:
+    # Parameters:
+    # ---------------
+    loss_func = nn.CrossEntropyLoss()
+    metrics = MetricCollection(
+        {"jaccard_index": JaccardIndex(task="multiclass", num_classes=33)}
+    )
+    transformations = transforms.Compose(
+        [
+            transforms.Resize(
+                (256, 256), interpolation=transforms.InterpolationMode.NEAREST
+            ),
+            transforms.ToTensor(),
+        ]
+    )
+    # ---------------
+
+    unet_config: UNetConfig = cast(
+        UNetConfig, load_config(Path("configs/unet_config.yaml"))
+    )
+
+    model = MulticlassUNetModel(
+        n_channels=unet_config.model.n_channels,
+        n_classes=unet_config.model.n_classes,
+        learning_rate=unet_config.model.learning_rate,
+        loss_func=loss_func,
+        metrics=metrics,
+    )
+
+    datamodule = TeethSegmentationDataModule(
+        image_dir=unet_config.dataloader.image_dir,
+        annotation_dir=unet_config.dataloader.masks_dir,
+        batch_size=unet_config.dataloader.batch_size,
+        num_of_workers=unet_config.dataloader.num_workers,
+        train_ratio=unet_config.dataloader.train_ratio,
+        transform=transformations,
+    )
+
+    trainer = Trainer(
+        accelerator=unet_config.training.accelerator,
+        max_epochs=unet_config.training.max_epochs,
+        log_every_n_steps=unet_config.training.log_every_n_steps,
+    )
+
+    mlflow.pytorch.autolog(log_every_n_step=unet_config.training.log_every_n_steps)
+
+    with mlflow.start_run(run_name="MulticlassUNet"):
+        trainer.fit(model, datamodule=datamodule)
 
 
 def train_preprocessing_model() -> None:
@@ -430,9 +485,10 @@ def measure_noise_std() -> None:
 
 
 if __name__ == "__main__":
-    test_unet_model()
+    train_multiclass_unet_model()
 
-    # TODO: Natrénovat UNet na hlavní datové sadě
+    # TODO: UNET na multiclass problému - segmentace zubů
+    # TODO: https://www.kaggle.com/datasets/humansintheloop/teeth-segmentation-on-dental-x-ray-images
 
     # TODO: Vyzkoušet všechny klasické filtrovací algoritmy a nastavit parametry
     # TODO: Vytvořit datovou sadu s využitím klasických filtrovacích technik
@@ -440,7 +496,7 @@ if __name__ == "__main__":
 
     # TODO: Loss - https://github.com/francois-rozet/piqa | https://stackoverflow.com/questions/53956932/use-pytorch-ssim-loss-function-in-my-model
     # TODO: Denoising autoencoder skip connections
+
     # TODO: Augmentace dat
-    # TODO: VAE
 
     # TODO: Citovat dataset

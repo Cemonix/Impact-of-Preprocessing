@@ -26,7 +26,7 @@ def resize_image(image: npt.NDArray, new_shape: tuple) -> npt.NDArray:
 
     Args:
         image (npt.NDArray): The original image array.
-        new_shape (tuple): The desired shape (height, width) for the resized image. 
+        new_shape (tuple): The desired shape (height, width) for the resized image.
                            For a 3D array, this should include the number of channels (height, width, channels).
 
     Returns:
@@ -80,16 +80,17 @@ def scale_polygons(
     scaled_polygons = []
     for polygon in polygons:
         scaled_vertices = [
-            Point(point.x * scale_x, point.y * scale_y) for point in polygon.vertices # type: ignore
-        ] 
+            Point(point.x * scale_x, point.y * scale_y) for point in polygon.vertices  # type: ignore
+        ]
         scaled_polygons.append(Polygon(*scaled_vertices))
 
     return scaled_polygons
 
 
 def draw_polygons_on_image(
-    image: Image.Image, polygons: List[Polygon],
-    fill_color: Tuple[int, int, int, int] = (0, 255, 0, 128)
+    image: Image.Image,
+    polygons: List[Polygon],
+    fill_color: Tuple[int, int, int, int] = (0, 255, 0, 128),
 ) -> Image.Image:
     """
     Draws polygons on an image with transparency.
@@ -103,20 +104,20 @@ def draw_polygons_on_image(
     Returns:
     - Image with polygons.
     """
-    if image.mode != 'RGBA':
-        image = image.convert('RGBA')
+    if image.mode != "RGBA":
+        image = image.convert("RGBA")
 
-    overlay = Image.new('RGBA', image.size, (255, 255, 255, 0))
+    overlay = Image.new("RGBA", image.size, (255, 255, 255, 0))
     draw_overlay = ImageDraw.Draw(overlay)
 
     for polygon in polygons:
-        vertices = [(float(p.x), float(p.y)) for p in polygon.vertices] # type: ignore
+        vertices = [(float(p.x), float(p.y)) for p in polygon.vertices]  # type: ignore
         draw_overlay.polygon(vertices, fill=fill_color)
 
     return Image.alpha_composite(image, overlay)
 
 
-def create_dataset(
+def create_noised_dataset(
     image_dir: Path, save_dir: Path, walk_recursive: bool = False
 ) -> None:
     if not image_dir.is_dir():
@@ -180,5 +181,24 @@ def create_dataset(
 
         dataset_info[image_path.stem] = info
 
-    with open("../" / save_dir / "dataset_info.json", "w") as json_file:
+    with open(save_dir / "dataset_info.json", "w") as json_file:
         json.dump({k: dataset_info[k] for k in sorted(dataset_info.keys())}, json_file)
+
+
+def create_mask_from_annotation(path_to_annotation: Path) -> npt.NDArray[np.uint8]:
+    with open(path_to_annotation, 'r') as file:
+        annotation = json.load(file)
+
+    height = annotation['size']['height']
+    width = annotation['size']['width']
+
+    mask = Image.new('I', (width, height), 0)
+    draw = ImageDraw.Draw(mask)
+
+    for obj in annotation['objects']:
+        class_id = int(obj['classTitle'])
+        polygon = [(int(x), int(y)) for x, y in obj['points']['exterior']]
+        if polygon:
+            draw.polygon(polygon, outline=class_id, fill=class_id)
+
+    return np.array(mask)

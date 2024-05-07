@@ -23,7 +23,7 @@ class UnetTrainingConfig(BaseModel):
     log_every_n_steps: int
 
 
-class UnetConfig(BaseModel):
+class UNetConfig(BaseModel):
     model: UnetModelConfig
     dataloader: UnetDataLoaderConfig
     training: UnetTrainingConfig

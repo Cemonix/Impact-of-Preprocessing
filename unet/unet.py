@@ -1,3 +1,4 @@
+from typing import Callable
 from pytorch_lightning import LightningModule
 import pytorch_lightning as pl
 import torch
@@ -38,7 +39,7 @@ class UNet(LightningModule):
         # Downsampling layers
         self.downs = nn.ModuleList(
             [
-                DoubleConv(n_channels if i == 0 else layers[i - 1], layers[i])
+                DoubleConv(self.n_channels if i == 0 else layers[i - 1], layers[i])
                 for i in range(len(layers))
             ]
         )
@@ -61,7 +62,7 @@ class UNet(LightningModule):
         )
 
         # Output layer
-        self.outc = nn.Conv2d(base, n_classes, kernel_size=1)
+        self.outc = nn.Conv2d(base, self.n_classes, kernel_size=1)
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         # Downsampling
@@ -93,12 +94,14 @@ class UNetModel(pl.LightningModule):
         self,
         n_channels: int,
         n_classes: int,
-        metrics: MetricCollection | None = None,
         learning_rate: float = 1e-4,
+        loss_func: Callable | None = None,
+        metrics: MetricCollection | None = None,
     ) -> None:
         super().__init__()
+        self.loss_func = loss_func if loss_func is not None else F.binary_cross_entropy_with_logits
         self.learning_rate = learning_rate
-        self.metrics = metrics or MetricCollection(
+        self.metrics = metrics if metrics is not None else MetricCollection(
             {"jaccard_index": JaccardIndex(task="binary", num_classes=n_classes)}
         )
         self.save_hyperparameters(ignore=["metrics"])
@@ -113,19 +116,12 @@ class UNetModel(pl.LightningModule):
     def training_step(self, batch: list[torch.Tensor], batch_idx: int) -> torch.Tensor:
         images, masks = batch
         predictions = self(images)
-        loss = F.binary_cross_entropy_with_logits(predictions, masks)
+        loss = self.loss_func(predictions, masks)
         self.log("train_loss", loss, on_step=True, prog_bar=True, logger=True)
         return loss
 
     def validation_step(self, batch: list[torch.Tensor], batch_idx: int) -> None:
-        images, masks = batch
-        predictions = self(images)
-
-        loss = F.binary_cross_entropy_with_logits(predictions, masks)
-        self.log("val_loss", loss, on_epoch=True, prog_bar=True, logger=True)
-
-        binary_masks = (masks > 0).float()
-        self.metrics.update(torch.sigmoid(predictions), binary_masks)
+        raise Exception("This method has to be overriden")
 
     def on_validation_epoch_end(self) -> None:
         metrics = self.metrics.compute()
@@ -133,3 +129,45 @@ class UNetModel(pl.LightningModule):
             self.log(f"val_{name}", value)
 
         self.metrics.reset()
+
+
+class BinaryUNetModel(UNetModel):
+    def __init__(
+        self,
+        n_channels: int,
+        n_classes: int,
+        learning_rate: float = 1e-4,
+        loss_func: Callable | None = None,
+        metrics: MetricCollection | None = None,
+    ) -> None:
+        super().__init__(n_channels, n_classes, learning_rate, loss_func, metrics)
+
+    def validation_step(self, batch: list[torch.Tensor], batch_idx: int) -> None:
+        images, masks = batch
+        predictions = self(images)
+
+        loss = self.loss_func(predictions, masks)
+        self.log("val_loss", loss, on_epoch=True, prog_bar=True, logger=True)
+
+        binary_masks = (masks > 0).float()
+        self.metrics.update(torch.sigmoid(predictions), binary_masks)
+
+
+class MulticlassUNetModel(UNetModel):
+    def __init__(
+        self,
+        n_channels: int,
+        n_classes: int,
+        learning_rate: float = 1e-4,
+        loss_func: Callable | None = None,
+        metrics: MetricCollection | None = None,
+    ) -> None:
+        super().__init__(n_channels, n_classes, learning_rate, loss_func, metrics)
+
+    def validation_step(self, batch: list[torch.Tensor], batch_idx: int) -> None:
+        images, masks = batch
+        predictions = self(images)
+        loss = self.loss_func(predictions, masks)
+        self.log("val_loss", loss, on_epoch=True, prog_bar=True, logger=True)
+
+        self.metrics.update(torch.argmax(predictions, dim=1), masks)

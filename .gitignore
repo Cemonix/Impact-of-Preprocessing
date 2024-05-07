@@ -161,3 +161,6 @@ mlruns/
 
 # PyCharm
 .idea/
+
+# Trained models
+models/
