@@ -24,7 +24,6 @@ class DataModule(ABC, LightningDataModule):
         self.train_ratio = train_ratio
         self.transform = transform if transform is not None else transforms.Compose(
             [
-                transforms.Resize((256, 256)),
                 transforms.ToTensor(),
             ]
         )

@@ -1,4 +1,4 @@
-from typing import List
+from typing import List, cast
 
 import numpy as np
 import torch
@@ -15,13 +15,15 @@ class UnetInference(ModelInference):
     ) -> None:
         images_for_comparison = []
         for image, target in zip(images, targets):
-            target_polygons = mask_to_polygons(np.array(target))
+            target = np.array(target)
+            target_polygons = mask_to_polygons(target)
+            target_polygons = scale_polygons(target_polygons, image.size, cast(tuple, target.shape))
             target_with_polygons = draw_polygons_on_image(image, target_polygons)
 
             mask = self.__pipeline(image)
-            mask_prob = torch.softmax(mask, dim=1).numpy()
+            mask_prob = torch.sigmoid(mask)
             mask_binary = (mask_prob > threshold).float().squeeze(0).squeeze(0)
-            mask_uint8 = (mask_binary * 255).astype(np.uint8)
+            mask_uint8 = (mask_binary * 255).to(torch.uint8).numpy()
             polygons = mask_to_polygons(mask_uint8)
             polygons = scale_polygons(polygons, image.size, mask_uint8.shape)
             image_with_polygons = draw_polygons_on_image(image, polygons)

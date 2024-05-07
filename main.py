@@ -1,11 +1,14 @@
-from typing import Optional, Any, Dict, cast
+from typing import Optional, Any, Dict, List, cast
+import os
 from pathlib import Path
 import numpy as np
 from numpy import typing as npt
 from PIL import Image
+from rich.progress import track
 from torchmetrics import MetricCollection
 from torchmetrics.image import PeakSignalNoiseRatio, StructuralSimilarityIndexMeasure
 from torchvision.transforms import transforms
+from torchvision.transforms.functional import to_pil_image
 from pytorch_lightning import Trainer
 import mlflow.pytorch
 
@@ -44,10 +47,56 @@ def create_dataset_main() -> None:
     create_dataset(image_dir, save_dir, walk_recursive)
 
 
+def apply_model_and_create_dataset() -> None:
+    # Parameters:
+    # ---------------
+    model_type = DnCNN
+    image_dir = Path("data/main_dataset/final_images")
+    save_dir = Path("data/main_dataset/dncnn_denoised_images")
+    path_to_checkpoint = Path(
+        "lightning_logs/DNCNN_main_dataset/checkpoints/epoch=55-step=17920.ckpt"
+    )
+    walk_recursive = False
+    # ---------------
+    transformations = transforms.Compose(
+        [
+            transforms.Resize((256, 256)),
+            transforms.ToTensor(),
+        ]
+    )
+
+    model = model_type.load_from_checkpoint(checkpoint_path=path_to_checkpoint)
+    model.to("cpu")
+    model.eval()
+
+    images_paths: List[Path] = []
+    for dirpath, _, filenames in os.walk(image_dir):
+        images_paths.extend([Path(dirpath, filename) for filename in filenames])
+        if not walk_recursive:
+            break
+
+    for image_path in track(
+        sequence=images_paths,
+        description="Making predictions and moving images...",
+        total=len(images_paths),
+    ):
+        image = load_image(image_path)
+        image_tensor = transformations(image)
+        prediction = model(image_tensor.unsqueeze(0))  # type: ignore
+        pred_image: Image.Image = to_pil_image(prediction.squeeze(0).squeeze(0))
+        pred_image.save(save_dir / image_path.name)
+
+
 def train_unet_model() -> None:
     # Parameters:
     # ---------------
     metrics = None
+    transformations = transforms.Compose(
+        [
+            # transforms.Resize((256, 256)),
+            transforms.ToTensor(),
+        ]
+    )
     # ---------------
 
     unet_config: UnetConfig = cast(
@@ -67,6 +116,7 @@ def train_unet_model() -> None:
         batch_size=unet_config.dataloader.batch_size,
         num_of_workers=unet_config.dataloader.num_workers,
         train_ratio=unet_config.dataloader.train_ratio,
+        transform=transformations,
     )
 
     trainer = Trainer(
@@ -85,10 +135,12 @@ def test_unet_model() -> None:
     # Parameters:
     # ---------------
     path_to_checkpoint = Path(
-        "lightning_logs/unet_model_v0/checkpoints/epoch=99-step=3200.ckpt"
+        "lightning_logs/unet_overfitted_dncnn_dataset/checkpoints/epoch=30-step=6200.ckpt"
     )
-    images = load_image(Path("data/dataset/images/CHNCXR_0005_0.png"))
-    targets = load_image(Path("data/dataset/masks/CHNCXR_0005_0_mask.png"))
+    images = load_image(
+        Path("data/main_dataset/dncnn_denoised_images/CHNCXR_0005_0.png")
+    )
+    targets = load_image(Path("data/main_dataset/masks/CHNCXR_0005_0.png"))
     transformations = transforms.Compose(
         [
             transforms.Resize((256, 256)),
@@ -114,6 +166,12 @@ def train_preprocessing_model() -> None:
     # Parameters:
     # ---------------
     architecture_type = "DnCNN"
+    transformations = transforms.Compose(
+        [
+            transforms.Resize((256, 256)),
+            transforms.ToTensor(),
+        ]
+    )
     metrics = MetricCollection(
         {
             "PSNR": PeakSignalNoiseRatio(),
@@ -158,6 +216,7 @@ def train_preprocessing_model() -> None:
         batch_size=preprocessing_config.dataloader.batch_size,
         num_of_workers=preprocessing_config.dataloader.num_workers,
         train_ratio=preprocessing_config.dataloader.train_ratio,
+        transform=transformations,
     )
 
     trainer = Trainer(
@@ -187,7 +246,7 @@ def test_preprocessing_model() -> None:
             transforms.ToTensor(),
         ]
     )
-    model_params = model_params = {"architecture_type": DnCNN}
+    model_params = {"architecture_type": DnCNN}
     noise_types = ["speckle_noise", "poisson_noise", "salt_and_pepper_noise"]
     # ---------------
 
@@ -325,7 +384,7 @@ def measure_metrics_for_images() -> None:
     # Parameters:
     # ---------------
     prediction = load_image(Path("data/main_dataset/final_images/CHNCXR_0005_0.png"))
-    target  = load_image(Path("data/main_dataset/original_images/CHNCXR_0005_0.png"))
+    target = load_image(Path("data/main_dataset/original_images/CHNCXR_0005_0.png"))
     metrics = MetricCollection(
         {
             "PSNR": PeakSignalNoiseRatio(),
@@ -371,7 +430,7 @@ def measure_noise_std() -> None:
 
 
 if __name__ == "__main__":
-    test_preprocessing_model()
+    test_unet_model()
 
     # TODO: Natrénovat UNet na hlavní datové sadě
 
