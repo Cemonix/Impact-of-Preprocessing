@@ -487,16 +487,24 @@ def measure_noise_std() -> None:
 if __name__ == "__main__":
     train_multiclass_unet_model()
 
-    # TODO: UNET na multiclass problému - segmentace zubů
-    # TODO: https://www.kaggle.com/datasets/humansintheloop/teeth-segmentation-on-dental-x-ray-images
+    # TODO: Vizualizace výsledků multiclass UNet
+
+    # TODO: Natrénovat Multiclass UNet se vstupem z DnCNN
+
+    # TODO: Natrénovat DAE
+    # TODO: Natrénovat UNet se vstupem z DAE
+    # TODO: Natrénovat Multiclass UNet se vstupem z DAE
 
     # TODO: Vyzkoušet všechny klasické filtrovací algoritmy a nastavit parametry
     # TODO: Vytvořit datovou sadu s využitím klasických filtrovacích technik
-    # TODO: Natrénovat UNet na této datové sadě a porovnat výsledky s UNetem bez filtrů
+    # TODO: Natrénovat UNet se vstupem z klasických filtrů
+    # TODO: Natrénovat Multiclass UNet se vstupem z klasických filtrů
+
+    # TODO: Úprava obrazu pomocí ekvalizace a kontrastu
+    # TODO: Augmentace dat
 
     # TODO: Loss - https://github.com/francois-rozet/piqa | https://stackoverflow.com/questions/53956932/use-pytorch-ssim-loss-function-in-my-model
     # TODO: Denoising autoencoder skip connections
 
-    # TODO: Augmentace dat
-
-    # TODO: Citovat dataset
+    # TODO: Citovat datasety
+    # TODO: https://www.kaggle.com/datasets/humansintheloop/teeth-segmentation-on-dental-x-ray-images
