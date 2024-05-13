@@ -201,4 +201,4 @@ def create_mask_from_annotation(path_to_annotation: Path) -> npt.NDArray[np.uint
         if polygon:
             draw.polygon(polygon, outline=class_id, fill=class_id)
 
-    return np.array(mask)
+    return np.array(mask).astype(np.uint8)

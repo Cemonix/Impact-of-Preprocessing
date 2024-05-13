@@ -140,12 +140,13 @@ def test_unet_model() -> None:
     # Parameters:
     # ---------------
     path_to_checkpoint = Path(
-        "lightning_logs/unet_overfitted_dncnn_dataset/checkpoints/epoch=30-step=6200.ckpt"
+        "models/UNet/MultiClassUNet/multiclass_unet_teeth_noised_dataset/checkpoints/epoch=74-step=1500.ckpt"
     )
     images = load_image(
-        Path("data/main_dataset/dncnn_denoised_images/CHNCXR_0005_0.png")
+        Path("data/TeethSegmentation/noised_images/1.jpg")
     )
-    targets = load_image(Path("data/main_dataset/masks/CHNCXR_0005_0.png"))
+    targets = Path("data/TeethSegmentation/chosen_anns/1.jpg.json")
+    # targets = load_image(targets)
     transformations = transforms.Compose(
         [
             transforms.Resize((256, 256)),
@@ -156,7 +157,7 @@ def test_unet_model() -> None:
 
     if isinstance(images, Image.Image):
         images = [images]
-    if isinstance(targets, Image.Image):
+    if isinstance(targets, Image.Image) or isinstance(targets, Path):
         targets = [targets]
 
     unet_inference = UnetInference(
@@ -164,7 +165,7 @@ def test_unet_model() -> None:
         path_to_checkpoint=path_to_checkpoint,
         transformations=transformations,
     )
-    unet_inference.inference_display(images, targets)
+    unet_inference.inference_display(images, targets, multiclass=True)
 
 
 def train_multiclass_unet_model() -> None:
@@ -485,7 +486,7 @@ def measure_noise_std() -> None:
 
 
 if __name__ == "__main__":
-    train_multiclass_unet_model()
+    test_unet_model()
 
     # TODO: Vizualizace výsledků multiclass UNet
 
