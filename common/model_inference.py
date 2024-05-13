@@ -1,6 +1,6 @@
 from abc import ABC, abstractmethod
 from pathlib import Path
-from typing import Any, Type
+from typing import Any, Type, cast
 
 import torch
 from PIL import Image
@@ -25,7 +25,7 @@ class ModelInference(ABC):
         self.model.eval()
 
     def process_image(self, image: Image.Image) -> torch.Tensor:
-        img_tensor: torch.Tensor = self.transform(image).unsqueeze(0) # type: ignore
+        img_tensor: torch.Tensor = cast(torch.Tensor, self.transform(image)).unsqueeze(0)
         return img_tensor.to(self.device)
 
     @abstractmethod

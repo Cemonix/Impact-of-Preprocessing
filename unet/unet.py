@@ -145,7 +145,6 @@ class BinaryUNetModel(UNetModel):
     def validation_step(self, batch: list[torch.Tensor], batch_idx: int) -> None:
         images, masks = batch
         predictions = self(images)
-
         loss = self.loss_func(predictions, masks)
         self.log("val_loss", loss, on_epoch=True, prog_bar=True, logger=True)
 
