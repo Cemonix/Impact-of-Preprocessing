@@ -3,7 +3,7 @@ import torch
 from torch import nn
 import torch.nn.functional as F
 from torch.distributions.normal import Normal
-from pytorch_lightning import LightningModule
+from lightning import LightningModule
 from torchmetrics import MetricCollection
 
 from preprocessing.neural_networks.model import PreprocessingModel

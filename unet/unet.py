@@ -1,6 +1,6 @@
 from typing import Callable
-from pytorch_lightning import LightningModule
-import pytorch_lightning as pl
+from lightning import LightningModule
+import lightning as L
 import torch
 import torch.nn.functional as F
 from torch.optim import AdamW, Optimizer
@@ -89,7 +89,7 @@ class UNet(LightningModule):
         return self.outc(x)
     
 
-class UNetModel(pl.LightningModule):
+class UNetModel(L.LightningModule):
     def __init__(
         self,
         n_channels: int,

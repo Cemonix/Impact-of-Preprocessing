@@ -1,7 +1,6 @@
-from numpy import pad
 import torch
 import torch.nn as nn
-from pytorch_lightning import LightningModule
+from lightning import LightningModule
 from torchmetrics import MetricCollection
 
 from preprocessing.neural_networks.model import PreprocessingModel
@@ -15,7 +14,6 @@ class ConvBlock(LightningModule):
         kernel_size: int = 3,
         padding: int = 1,
         stride: int = 1,
-        max_pool_kernel: int = 2,
     ) -> None:
         super(ConvBlock, self).__init__()
         self.conv = nn.Sequential(
@@ -27,7 +25,8 @@ class ConvBlock(LightningModule):
                 stride=stride,
             ),
             nn.ReLU(inplace=True),
-            nn.MaxPool2d(max_pool_kernel),
+            nn.Dropout(0.2),
+            nn.BatchNorm2d(out_channels),
         )
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
@@ -41,8 +40,8 @@ class DeConvBlock(LightningModule):
         out_channels: int,
         kernel_size: int = 3,
         stride: int = 1,
-        padding: int = 0,
-        output_padding: int = 0,
+        padding: int = 1,
+        output_padding: int = 1,
     ) -> None:
         super(DeConvBlock, self).__init__()
         self.conv = nn.Sequential(
@@ -55,6 +54,8 @@ class DeConvBlock(LightningModule):
                 output_padding=output_padding,
             ),
             nn.ReLU(inplace=True),
+            nn.Dropout(0.2),
+            nn.BatchNorm2d(out_channels),
         )
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
@@ -70,25 +71,47 @@ class DenoisingAutoencoder(PreprocessingModel):
     ) -> None:
         super(DenoisingAutoencoder, self).__init__(
             learning_rate=learning_rate, metrics=metrics
-        )
-        self.encoder = nn.Sequential(
-            ConvBlock(in_channels=n_channels, out_channels=16),
-            ConvBlock(in_channels=16, out_channels=32),
-            ConvBlock(in_channels=32, out_channels=64),
-            ConvBlock(in_channels=64, out_channels=128),
-        )
+        )        
+        self.encoder_layers = nn.ModuleList([
+            ConvBlock(n_channels, 64, 3, stride=1),
+            ConvBlock(64, 64, 3, stride=2),
+            ConvBlock(64, 128, 5, stride=2, padding=2),
+            ConvBlock(128, 128, 3, stride=1),
+            ConvBlock(128, 256, 5, stride=2, padding=2),
+            ConvBlock(256, 512, 3, stride=2),
+        ])
+        
+        self.decoder_layers = nn.ModuleList([
+            DeConvBlock(512, 512, 3, stride=2),
+            DeConvBlock(512, 256, 3, stride=2),
+            DeConvBlock(256, 128, 5, stride=2, padding=2),
+            DeConvBlock(128, 64, 3, stride=2),
+            DeConvBlock(64, 64, 3, stride=1, output_padding=0),
+            DeConvBlock(64, n_channels, 3, output_padding=0),
+        ])
+        
+        self.adjust_layers = nn.ModuleList([
+            nn.Conv2d(768, 512, kernel_size=1),
+            nn.Conv2d(384, 256, kernel_size=1),
+            nn.Conv2d(192, 128, kernel_size=1),
+            nn.Conv2d(128, 64, kernel_size=1),
+        ])
 
-        self.decoder = nn.Sequential(
-            DeConvBlock(in_channels=128, out_channels=64, kernel_size=2, stride=2),
-            DeConvBlock(in_channels=64, out_channels=32, kernel_size=2, stride=2),
-            DeConvBlock(in_channels=32, out_channels=16, kernel_size=2, stride=2),
-            DeConvBlock(
-                in_channels=16, out_channels=n_channels, kernel_size=2, stride=2
-            ),
-            nn.Sigmoid(),
-        )
+        # Encoder layers that will be connected to decoder -> n-1
+        self.skip_connection_layer_idxs = [4, 2, 1, 0]
 
-    def forward(self, x) -> torch.Tensor:
-        noise = self.encoder(x)
-        noise = self.decoder(noise)
-        return x - noise
+    def forward(self, x: torch.Tensor) -> torch.Tensor:
+        # Encoder
+        encoder_outputs = []
+        for encoder_layer in self.encoder_layers:
+            x = encoder_layer(x)
+            encoder_outputs.append(x)
+        
+        # Decoder with skip connections
+        for i, decoder_layer in enumerate(self.decoder_layers):
+            x = decoder_layer(x)
+            if i < len(self.skip_connection_layer_idxs):
+                x = torch.cat([x, encoder_outputs[self.skip_connection_layer_idxs[i]]], dim=1)  # skip connections
+                x = self.adjust_layers[i](x)  # adjust channels
+        
+        return x

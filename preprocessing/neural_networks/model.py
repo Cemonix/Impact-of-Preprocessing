@@ -4,7 +4,7 @@ from typing import Any, Dict
 import torch
 import torch.nn.functional as F
 import torch.optim as optim
-from pytorch_lightning import LightningModule
+from lightning import LightningModule
 from torchmetrics import MeanSquaredError, MetricCollection
 
 

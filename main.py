@@ -10,7 +10,8 @@ from torchmetrics import JaccardIndex, MetricCollection
 from torchmetrics.image import PeakSignalNoiseRatio, StructuralSimilarityIndexMeasure
 from torchvision.transforms import transforms
 from torchvision.transforms.functional import to_pil_image
-from pytorch_lightning import Trainer
+from lightning.pytorch import Trainer
+from lightning.pytorch.callbacks.early_stopping import EarlyStopping
 import mlflow.pytorch
 
 from common.data_manipulation import (
@@ -95,6 +96,7 @@ def apply_model_and_create_dataset() -> None:
 def train_unet_model() -> None:
     # Parameters:
     # ---------------
+    early_stopping = True
     metrics = None
     transformations = transforms.Compose(
         [
@@ -124,10 +126,16 @@ def train_unet_model() -> None:
         transform=transformations,
     )
 
+    if early_stopping:
+        early_stop_callback = EarlyStopping(
+            monitor="val_loss", patience=5, verbose=False, mode="min"
+        )
+
     trainer = Trainer(
         accelerator=unet_config.training.accelerator,
         max_epochs=unet_config.training.max_epochs,
         log_every_n_steps=unet_config.training.log_every_n_steps,
+        callbacks=[early_stop_callback] if early_stopping else None,  # type: ignore
     )
 
     mlflow.pytorch.autolog(log_every_n_step=unet_config.training.log_every_n_steps)
@@ -142,9 +150,7 @@ def test_unet_model() -> None:
     path_to_checkpoint = Path(
         "models/UNet/MultiClassUNet/multiclass_unet_teeth_noised_dataset/checkpoints/epoch=74-step=1500.ckpt"
     )
-    images = load_image(
-        Path("data/TeethSegmentation/noised_images/1.jpg")
-    )
+    images = load_image(Path("data/TeethSegmentation/noised_images/1.jpg"))
     targets = Path("data/TeethSegmentation/chosen_anns/1.jpg.json")
     # targets = load_image(targets)
     transformations = transforms.Compose(
@@ -171,6 +177,7 @@ def test_unet_model() -> None:
 def train_multiclass_unet_model() -> None:
     # Parameters:
     # ---------------
+    early_stopping = True
     loss_func = nn.CrossEntropyLoss()
     metrics = MetricCollection(
         {"jaccard_index": JaccardIndex(task="multiclass", num_classes=33)}
@@ -206,10 +213,16 @@ def train_multiclass_unet_model() -> None:
         transform=transformations,
     )
 
+    if early_stopping:
+        early_stop_callback = EarlyStopping(
+            monitor="val_loss", patience=5, verbose=False, mode="min"
+        )
+
     trainer = Trainer(
         accelerator=unet_config.training.accelerator,
         max_epochs=unet_config.training.max_epochs,
         log_every_n_steps=unet_config.training.log_every_n_steps,
+        callbacks=[early_stop_callback] if early_stopping else None,  # type: ignore
     )
 
     mlflow.pytorch.autolog(log_every_n_step=unet_config.training.log_every_n_steps)
@@ -221,11 +234,15 @@ def train_multiclass_unet_model() -> None:
 def train_preprocessing_model() -> None:
     # Parameters:
     # ---------------
-    architecture_type = "DnCNN"
+    early_stopping = True
+    architecture_type = "DenoisingAutoencoder"
     transformations = transforms.Compose(
         [
-            transforms.Resize((256, 256)),
+            transforms.Resize(
+                (256, 256), interpolation=transforms.InterpolationMode.NEAREST
+            ),
             transforms.ToTensor(),
+            transforms.Normalize((0.5,), (0.5,))
         ]
     )
     metrics = MetricCollection(
@@ -275,10 +292,16 @@ def train_preprocessing_model() -> None:
         transform=transformations,
     )
 
+    if early_stopping:
+        early_stop_callback = EarlyStopping(
+            monitor="val_loss", patience=5, verbose=False, mode="min"
+        )
+
     trainer = Trainer(
         accelerator=preprocessing_config.training.accelerator,
         max_epochs=preprocessing_config.training.max_epochs,
         log_every_n_steps=preprocessing_config.training.log_every_n_steps,
+        callbacks=[early_stop_callback] if early_stopping else None,  # type: ignore
     )
 
     mlflow.pytorch.autolog(
@@ -292,9 +315,10 @@ def train_preprocessing_model() -> None:
 def test_preprocessing_model() -> None:
     # Parameters:
     # ---------------
-    images = load_image(Path("data/main_dataset/original_images/CHNCXR_0005_0.png"))
+    # images = load_image(Path("data/main_dataset/original_images/CHNCXR_0005_0.png"))
+    images = load_image(Path("data/main_dataset/original_images/1.jpg"))
     path_to_checkpoint = Path(
-        "lightning_logs/DNCNN_main_dataset/checkpoints/epoch=55-step=17920.ckpt"
+        "lightning_logs/version_1/checkpoints/epoch=31-step=11264.ckpt"
     )
     transformations = transforms.Compose(
         [
@@ -302,7 +326,8 @@ def test_preprocessing_model() -> None:
             transforms.ToTensor(),
         ]
     )
-    model_params = {"architecture_type": DnCNN}
+    model_type = DenoisingAutoencoder
+    model_params = {"architecture_type": model_type}
     noise_types = ["speckle_noise", "poisson_noise", "salt_and_pepper_noise"]
     # ---------------
 
@@ -314,7 +339,7 @@ def test_preprocessing_model() -> None:
         load_config(Path("configs/noise_transforms_config.yaml")),
     )
     dncnn_inference = PreprocessingInference(
-        model_type=DnCNN,
+        model_type=model_type,
         path_to_checkpoint=path_to_checkpoint,
         transformations=transformations,
         noise_transform_config=noise_transform_config,
@@ -486,9 +511,8 @@ def measure_noise_std() -> None:
 
 
 if __name__ == "__main__":
-    test_unet_model()
-
-    # TODO: Vizualizace výsledků multiclass UNet
+    train_preprocessing_model()
+    # test_preprocessing_model()
 
     # TODO: Natrénovat Multiclass UNet se vstupem z DnCNN
 

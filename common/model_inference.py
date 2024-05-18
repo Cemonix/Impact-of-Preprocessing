@@ -4,7 +4,7 @@ from typing import Any, Type, cast
 
 import torch
 from PIL import Image
-from pytorch_lightning import LightningModule
+from lightning import LightningModule
 from torchvision.transforms import transforms
 
 
