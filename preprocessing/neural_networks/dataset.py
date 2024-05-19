@@ -1,9 +1,10 @@
+from typing import Optional
 import os
 from pathlib import Path
 
 from PIL import Image
 from torch.utils.data import Dataset
-from torchvision import transforms
+import torchvision.transforms.v2 as vision_trans
 
 
 class PreprocessingDataset(Dataset):
@@ -11,11 +12,13 @@ class PreprocessingDataset(Dataset):
         self,
         image_dir: Path,
         noised_image_dir: Path,
-        transform: transforms.Compose,
+        image_transform: vision_trans.Compose,
+        augmentations: Optional[vision_trans.Compose] = None,
     ) -> None:
         self.image_dir = image_dir
         self.noised_image_dir = noised_image_dir
-        self.transform = transform
+        self.transform = image_transform
+        self.augmentations = augmentations
 
         self.images = os.listdir(self.image_dir)
         self.noised_images = os.listdir(self.noised_image_dir)
@@ -31,6 +34,10 @@ class PreprocessingDataset(Dataset):
         noised_image = Image.open(noised_img_path).convert("L")
 
         image = self.transform(image)
-        noised_image = self.transform(noised_image)
+        noised_image = (
+            self.augmentations(noised_image) 
+            if self.augmentations is not None 
+            else self.transform(noised_image)
+        )
 
         return noised_image, image

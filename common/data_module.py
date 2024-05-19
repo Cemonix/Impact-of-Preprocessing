@@ -4,7 +4,7 @@ from typing import Optional
 
 from lightning import LightningDataModule
 from torch.utils.data import DataLoader
-from torchvision import transforms
+import torchvision.transforms.v2 as vision_trans
 
 
 class DataModule(ABC, LightningDataModule):
@@ -14,7 +14,8 @@ class DataModule(ABC, LightningDataModule):
         batch_size: int = 4,
         num_of_workers: int = 8,
         train_ratio: float = 0.8,
-        transform: Optional[transforms.Compose] | None = None,
+        transform: Optional[vision_trans.Compose ] = None,
+        augmentations: Optional[vision_trans.Compose] = None,
     ) -> None:
         super().__init__()
         assert image_dir.exists() and image_dir.is_dir(), "Image directory does not exist"
@@ -22,11 +23,12 @@ class DataModule(ABC, LightningDataModule):
         self.batch_size = batch_size
         self.num_of_workers = num_of_workers
         self.train_ratio = train_ratio
-        self.transform = transform if transform is not None else transforms.Compose(
+        self.transform = transform if transform is not None else vision_trans.Compose(
             [
-                transforms.ToTensor(),
+                vision_trans.ToTensor(),
             ]
         )
+        self.augmentations = augmentations
 
         self.train = None
         self.val = None

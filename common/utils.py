@@ -5,7 +5,7 @@ from numpy import typing as npt
 from rich.progress import track
 import torch
 from torchmetrics import MetricCollection
-from torchvision.transforms import transforms
+import torchvision.transforms.v2 as vision_trans
 
 
 from common import noise_transforms
@@ -101,7 +101,7 @@ def metrics_calculation(
     predictions: List[Image.Image] | Image.Image,
     targets: List[Image.Image] | Image.Image,
     metrics: MetricCollection,
-    transformations: transforms.Compose | None = None,
+    transformations: vision_trans.Compose | None = None,
 ) -> None:
     if isinstance(predictions, Image.Image):
         predictions = [predictions]
@@ -113,7 +113,7 @@ def metrics_calculation(
         raise Exception(f"Predictions has not same size as targets")
 
     if transformations is None:
-        transformations = transforms.Compose([transforms.ToTensor()])
+        transformations = vision_trans.Compose([vision_trans.ToTensor()])
 
     for predition, target in zip(predictions, targets):
         predition_tensor = cast(torch.Tensor, transformations(predition))

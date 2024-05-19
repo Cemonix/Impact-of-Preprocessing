@@ -2,7 +2,7 @@ from pathlib import Path
 from typing import Optional
 
 from torch.utils.data import random_split
-from torchvision import transforms
+import torchvision.transforms.v2 as vision_trans
 
 from common.data_module import DataModule
 from unet.dataset import LungSegmentationDataset, TeethSegmentationDataset
@@ -16,7 +16,7 @@ class LungSegmentationDataModule(DataModule):
         batch_size: int = 4,
         num_of_workers: int = 8,
         train_ratio: float = 0.8,
-        transform: Optional[transforms.Compose] | None = None,
+        transform: Optional[vision_trans.Compose] | None = None,
     ) -> None:
         super().__init__(
             image_dir, batch_size, num_of_workers, train_ratio, transform
@@ -56,7 +56,7 @@ class TeethSegmentationDataModule(DataModule):
         batch_size: int = 4,
         num_of_workers: int = 8,
         train_ratio: float = 0.8,
-        transform: Optional[transforms.Compose] | None = None,
+        transform: Optional[vision_trans.Compose] | None = None,
     ) -> None:
         super().__init__(
             image_dir, batch_size, num_of_workers, train_ratio, transform

@@ -8,8 +8,8 @@ from rich.progress import track
 from torch import nn
 from torchmetrics import JaccardIndex, MetricCollection
 from torchmetrics.image import PeakSignalNoiseRatio, StructuralSimilarityIndexMeasure
-from torchvision.transforms import transforms
-from torchvision.transforms.functional import to_pil_image
+import torchvision.transforms.v2 as vision_trans
+from torchvision.transforms.v2.functional import to_pil_image
 from lightning.pytorch import Trainer
 from lightning.pytorch.callbacks.early_stopping import EarlyStopping
 import mlflow.pytorch
@@ -64,10 +64,10 @@ def apply_model_and_create_dataset() -> None:
     )
     walk_recursive = False
     # ---------------
-    transformations = transforms.Compose(
+    transformations = vision_trans.Compose(
         [
-            transforms.Resize((256, 256)),
-            transforms.ToTensor(),
+            vision_trans.Resize((256, 256)),
+            vision_trans.ToTensor(),
         ]
     )
 
@@ -98,10 +98,10 @@ def train_unet_model() -> None:
     # ---------------
     early_stopping = True
     metrics = None
-    transformations = transforms.Compose(
+    transformations = vision_trans.Compose(
         [
-            transforms.Resize((256, 256)),
-            transforms.ToTensor(),
+            vision_trans.Resize((256, 256)),
+            vision_trans.ToTensor(),
         ]
     )
     # ---------------
@@ -153,10 +153,16 @@ def test_unet_model() -> None:
     images = load_image(Path("data/TeethSegmentation/noised_images/1.jpg"))
     targets = Path("data/TeethSegmentation/chosen_anns/1.jpg.json")
     # targets = load_image(targets)
-    transformations = transforms.Compose(
+    transformations = vision_trans.Compose(
         [
-            transforms.Resize((256, 256)),
-            transforms.ToTensor(),
+            vision_trans.RandomApply(
+                [vision_trans.GaussianBlur(kernel_size=(5, 9), sigma=(0.1, 5))], p=0.2
+            ),
+            vision_trans.RandomAdjustSharpness(sharpness_factor=2, p=0.2),
+            vision_trans.RandomAutocontrast(p=0.3),
+            vision_trans.RandomEqualize(p=0.4),
+            vision_trans.Resize((256, 256)),
+            vision_trans.ToTensor()
         ]
     )
     # ---------------
@@ -182,12 +188,16 @@ def train_multiclass_unet_model() -> None:
     metrics = MetricCollection(
         {"jaccard_index": JaccardIndex(task="multiclass", num_classes=33)}
     )
-    transformations = transforms.Compose(
+    transformations = vision_trans.Compose(
         [
-            transforms.Resize(
-                (256, 256), interpolation=transforms.InterpolationMode.NEAREST
+            vision_trans.RandomApply(
+                [vision_trans.GaussianBlur(kernel_size=(5, 9), sigma=(0.1, 5))], p=0.2
             ),
-            transforms.ToTensor(),
+            vision_trans.RandomAdjustSharpness(sharpness_factor=2, p=0.2),
+            vision_trans.RandomAutocontrast(p=0.3),
+            vision_trans.RandomEqualize(p=0.4),
+            vision_trans.Resize((256, 256)),
+            vision_trans.ToTensor()
         ]
     )
     # ---------------
@@ -236,20 +246,30 @@ def train_preprocessing_model() -> None:
     # ---------------
     early_stopping = True
     architecture_type = "DenoisingAutoencoder"
-    transformations = transforms.Compose(
-        [
-            transforms.Resize(
-                (256, 256), interpolation=transforms.InterpolationMode.NEAREST
-            ),
-            transforms.ToTensor(),
-            transforms.Normalize((0.5,), (0.5,))
-        ]
-    )
     metrics = MetricCollection(
         {
             "PSNR": PeakSignalNoiseRatio(),
             "SSIM": StructuralSimilarityIndexMeasure(),
         }
+    )
+    transformations = vision_trans.Compose(
+        [
+            vision_trans.Resize((256, 256)),
+            vision_trans.ToTensor()
+        ]
+    )
+    augmentations = vision_trans.Compose(
+        [
+            vision_trans.RandomApply(
+                [vision_trans.GaussianBlur(kernel_size=(5, 9), sigma=(0.1, 5))], p=0.2
+            ),
+            vision_trans.RandomAdjustSharpness(sharpness_factor=2, p=0.2),
+            vision_trans.RandomAutocontrast(p=0.3),
+            vision_trans.RandomEqualize(p=0.4),
+            vision_trans.RandomHorizontalFlip(p=0.5),
+            vision_trans.Resize((256, 256)),
+            vision_trans.ToTensor()
+        ]
     )
     # ---------------
 
@@ -290,6 +310,7 @@ def train_preprocessing_model() -> None:
         num_of_workers=preprocessing_config.dataloader.num_workers,
         train_ratio=preprocessing_config.dataloader.train_ratio,
         transform=transformations,
+        augmentations=augmentations
     )
 
     if early_stopping:
@@ -320,10 +341,10 @@ def test_preprocessing_model() -> None:
     path_to_checkpoint = Path(
         "lightning_logs/version_1/checkpoints/epoch=31-step=11264.ckpt"
     )
-    transformations = transforms.Compose(
+    transformations = vision_trans.Compose(
         [
-            transforms.Resize((256, 256)),
-            transforms.ToTensor(),
+            vision_trans.Resize((256, 256)),
+            vision_trans.ToTensor(),
         ]
     )
     model_type = DenoisingAutoencoder
@@ -472,10 +493,10 @@ def measure_metrics_for_images() -> None:
             "SSIM": StructuralSimilarityIndexMeasure(),
         }
     )
-    transformations = transforms.Compose(
+    transformations = vision_trans.Compose(
         [
-            transforms.Resize((256, 256)),
-            transforms.ToTensor(),
+            vision_trans.Resize((256, 256)),
+            vision_trans.ToTensor(),
         ]
     )
     # ---------------

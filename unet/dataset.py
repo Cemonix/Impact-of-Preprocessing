@@ -5,14 +5,14 @@ from typing import cast
 from PIL import Image
 import torch
 from torch.utils.data import Dataset
-from torchvision import transforms
+import torchvision.transforms.v2 as vision_trans
 
 from common.data_manipulation import create_mask_from_annotation
 
 
 class LungSegmentationDataset(Dataset):
     def __init__(
-        self, image_dir: Path, mask_dir: Path, transform: transforms.Compose
+        self, image_dir: Path, mask_dir: Path, transform: vision_trans.Compose
     ) -> None:
         """
         Custom dataset for lung segmentation.
@@ -47,15 +47,13 @@ class LungSegmentationDataset(Dataset):
         image = Image.open(img_path).convert("L")
         mask = Image.open(mask_path).convert("L")
 
-        image = self.transform(image)
-        mask = self.transform(mask)
-
+        image, mask = self.transform(image, mask)
         return image, mask
 
 
 class TeethSegmentationDataset(Dataset):
     def __init__(
-        self, image_dir: Path, annotation_dir: Path, transform: transforms.Compose
+        self, image_dir: Path, annotation_dir: Path, transform: vision_trans.Compose
     ) -> None:
         """
         Custom dataset for teeth segmentation.
@@ -91,7 +89,6 @@ class TeethSegmentationDataset(Dataset):
         image = Image.open(img_path).convert("L")
         mask = Image.fromarray(create_mask_from_annotation(annotation_path))
 
-        image = self.transform(image)
-        mask = cast(torch.Tensor, self.transform(mask)).squeeze(0)
-        mask = mask.type(torch.long)
-        return image, mask
+        image, mask = self.transform(image, mask)
+        mask = cast(torch.Tensor, mask)
+        return image, mask.squeeze(0).type(torch.long)

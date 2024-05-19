@@ -5,19 +5,19 @@ from typing import Any, Type, cast
 import torch
 from PIL import Image
 from lightning import LightningModule
-from torchvision.transforms import transforms
+import torchvision.transforms.v2 as vision_trans
 
 
 class ModelInference(ABC):
     def __init__(
         self, model_type: Type[LightningModule], path_to_checkpoint: Path,
-        transformations: transforms.Compose | None = None, device: str = "cpu", **kwargs
+        transformations: vision_trans.Compose | None = None, device: str = "cpu", **kwargs
     ) -> None:
         self.device = device
-        self.transform = transformations if transformations else transforms.Compose(
+        self.transform = transformations if transformations else vision_trans.Compose(
             [
-                transforms.Resize((256, 256)),
-                transforms.ToTensor(),
+                vision_trans.Resize((256, 256)),
+                vision_trans.ToTensor(),
             ]
         )
         self.model = self.__load_model(model_type, path_to_checkpoint, **kwargs)

@@ -2,7 +2,7 @@ from pathlib import Path
 from typing import Any, Dict, List, Optional
 
 from torch.utils.data import random_split
-from torchvision import transforms
+import torchvision.transforms.v2 as vision_trans
 
 from common.data_module import DataModule
 from preprocessing.neural_networks.dataset import PreprocessingDataset
@@ -16,16 +16,18 @@ class PreprocessingDataModule(DataModule):
         batch_size: int = 4,
         num_of_workers: int = 8,
         train_ratio: float = 0.8,
-        transform: Optional[transforms.Compose] = None,
+        transform: Optional[vision_trans.Compose] = None,
+        augmentations: Optional[vision_trans.Compose] = None,
     ) -> None:
-        super().__init__(image_dir, batch_size, num_of_workers, train_ratio, transform)
+        super().__init__(image_dir, batch_size, num_of_workers, train_ratio, transform, augmentations)
         self.noised_image_dir = noised_image_dir
 
     def setup(self, stage: Optional[str] = None) -> None:
         full_dataset = PreprocessingDataset(
-            self.image_dir,
-            self.noised_image_dir,
-            self.transform,
+            image_dir=self.image_dir,
+            noised_image_dir=self.noised_image_dir,
+            image_transform=self.transform,
+            augmentations=self.augmentations
         )
         train_size = int(self.train_ratio * len(full_dataset))
         test_size = len(full_dataset) - train_size
