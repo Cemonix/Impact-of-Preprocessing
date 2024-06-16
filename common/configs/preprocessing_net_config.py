@@ -21,6 +21,7 @@ class PreprocessingTrainingConfig(BaseModel):
     accelerator: str
     max_epochs: int
     log_every_n_steps: int
+    early_stopping: bool
 
 
 class PreprocessingNetConfig(BaseModel):

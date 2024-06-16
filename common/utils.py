@@ -1,3 +1,4 @@
+from pathlib import Path
 from typing import Any, Dict, List, Optional, cast
 import numpy as np
 from PIL import Image
@@ -98,15 +99,15 @@ def standard_preprocessing_ensemble_averaging(
 
 
 def metrics_calculation(
-    predictions: List[Image.Image] | Image.Image,
-    targets: List[Image.Image] | Image.Image,
+    predictions: List[Path] | Path,
+    targets: List[Path] | Path,
     metrics: MetricCollection,
     transformations: vision_trans.Compose | None = None,
 ) -> None:
-    if isinstance(predictions, Image.Image):
+    if isinstance(predictions, Path):
         predictions = [predictions]
 
-    if isinstance(targets, Image.Image):
+    if isinstance(targets, Path):
         targets = [targets]
 
     if len(predictions) != len(targets):
@@ -115,7 +116,26 @@ def metrics_calculation(
     if transformations is None:
         transformations = vision_trans.Compose([vision_trans.ToTensor()])
 
-    for predition, target in zip(predictions, targets):
-        predition_tensor = cast(torch.Tensor, transformations(predition))
-        target_tensor = cast(torch.Tensor, transformations(target))
-        print(metrics(predition_tensor.unsqueeze(0), target_tensor.unsqueeze(0)))
+    avg_metrics: Dict[str, float] = {}
+    for prediction, target in track(
+        sequence=zip(predictions, targets),
+        description="Measuring metrics...",
+        total=len(predictions),
+    ):
+        with Image.open(prediction) as prediction_img:
+            prediction_img = prediction_img.convert("L")
+        with Image.open(target) as target_img:
+            target_img = target_img.convert("L")
+
+        predition_tensor = cast(torch.Tensor, transformations(prediction_img))
+        target_tensor = cast(torch.Tensor, transformations(target_img))
+
+        metric_result: Dict[str, Any] = metrics(predition_tensor.unsqueeze(0), target_tensor.unsqueeze(0))
+
+        for key, value in metric_result.items():
+            if key not in avg_metrics:
+                avg_metrics[key] = 0.0
+            avg_metrics[key] += value.item()
+
+    for key, value in avg_metrics.items():
+        print(f"{key}:{value / len(predictions)}")

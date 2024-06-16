@@ -244,8 +244,15 @@ def train_multiclass_unet_model() -> None:
 def train_preprocessing_model() -> None:
     # Parameters:
     # ---------------
-    early_stopping = True
     architecture_type = "DenoisingAutoencoder"
+    transformations = vision_trans.Compose(
+        [
+            vision_trans.Resize(
+                (256, 256), interpolation=vision_trans.InterpolationMode.NEAREST
+            ),
+            vision_trans.ToTensor(),
+        ]
+    )
     metrics = MetricCollection(
         {
             "PSNR": PeakSignalNoiseRatio(),
@@ -313,16 +320,15 @@ def train_preprocessing_model() -> None:
         augmentations=augmentations
     )
 
-    if early_stopping:
-        early_stop_callback = EarlyStopping(
-            monitor="val_loss", patience=5, verbose=False, mode="min"
-        )
+    early_stop_callback = EarlyStopping(
+        monitor="val_loss", patience=5, verbose=False, mode="min"
+    )
 
     trainer = Trainer(
         accelerator=preprocessing_config.training.accelerator,
         max_epochs=preprocessing_config.training.max_epochs,
         log_every_n_steps=preprocessing_config.training.log_every_n_steps,
-        callbacks=[early_stop_callback] if early_stopping else None,  # type: ignore
+        callbacks=[early_stop_callback] if preprocessing_config.training.early_stopping else None,  # type: ignore
     )
 
     mlflow.pytorch.autolog(
@@ -339,7 +345,7 @@ def test_preprocessing_model() -> None:
     # images = load_image(Path("data/main_dataset/original_images/CHNCXR_0005_0.png"))
     images = load_image(Path("data/main_dataset/original_images/1.jpg"))
     path_to_checkpoint = Path(
-        "lightning_logs/version_1/checkpoints/epoch=31-step=11264.ckpt"
+        "lightning_logs/version_1/checkpoints/epoch=99-step=2500.ckpt"
     )
     transformations = vision_trans.Compose(
         [
@@ -485,8 +491,12 @@ def test_preproccesing_ensemble_method() -> None:
 def measure_metrics_for_images() -> None:
     # Parameters:
     # ---------------
-    prediction = load_image(Path("data/main_dataset/final_images/CHNCXR_0005_0.png"))
-    target = load_image(Path("data/main_dataset/original_images/CHNCXR_0005_0.png"))
+    predictions_path = Path("data/main_dataset/final_images/")
+    targets_path = Path("data/main_dataset/original_images/")
+    predictions = [
+        predictions_path / img_path for img_path in sorted(os.listdir(predictions_path))
+    ]
+    targets = [targets_path / img_path for img_path in sorted(os.listdir(targets_path))]
     metrics = MetricCollection(
         {
             "PSNR": PeakSignalNoiseRatio(),
@@ -500,7 +510,7 @@ def measure_metrics_for_images() -> None:
         ]
     )
     # ---------------
-    metrics_calculation(prediction, target, metrics, transformations)
+    metrics_calculation(predictions, targets, metrics, transformations)
 
 
 def measure_noise_std() -> None:
@@ -532,8 +542,9 @@ def measure_noise_std() -> None:
 
 
 if __name__ == "__main__":
-    train_preprocessing_model()
-    # test_preprocessing_model()
+    # train_preprocessing_model()
+    test_preprocessing_model()
+    # measure_metrics_for_images()
 
     # TODO: Natrénovat Multiclass UNet se vstupem z DnCNN
 
@@ -551,6 +562,3 @@ if __name__ == "__main__":
 
     # TODO: Loss - https://github.com/francois-rozet/piqa | https://stackoverflow.com/questions/53956932/use-pytorch-ssim-loss-function-in-my-model
     # TODO: Denoising autoencoder skip connections
-
-    # TODO: Citovat datasety
-    # TODO: https://www.kaggle.com/datasets/humansintheloop/teeth-segmentation-on-dental-x-ray-images
