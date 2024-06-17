@@ -32,9 +32,9 @@ local_adaptive_median_filter:
   radius: 5
   multiplier: 1.0
 
-frost_filter:
-  window_size: 7
-  initial_K: 0.6
+# frost_filter:
+#   window_size: 7
+#   initial_K: 0.6
 
 wavelet_denoise_filter:
   wavelet: "db1"

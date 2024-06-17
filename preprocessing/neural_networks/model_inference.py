@@ -35,6 +35,7 @@ class PreprocessingInference(ModelInference):
         for image in images:
             image_tensor = cast(torch.Tensor, self.transform(image.copy()))
             noised_tensor, prediction = self.__pipeline(image.copy())
+            prediction = prediction.clamp(0, 1)
             images_for_display.extend(
                 [
                     to_pil_image(image_tensor),

@@ -1,5 +1,5 @@
-from pathlib import Path
 from typing import Any, Dict, List, Optional, cast
+from pathlib import Path
 import numpy as np
 from PIL import Image
 from numpy import typing as npt
@@ -81,18 +81,24 @@ def apply_standard_preprocessing(
 
 
 def standard_preprocessing_ensemble_averaging(
-    image: npt.NDArray[np.uint8], preprocessing_config: Dict[str, Dict[str, Any]]
+    image: npt.NDArray[np.uint8], preprocessing_config: Dict[str, Dict[str, Any]], show_process: bool = True
 ) -> Image.Image:
     preprocessed_images: List[npt.NDArray[np.float64]] = []
 
-    for method, params in track(
-        sequence=preprocessing_config.items(),
-        description="Applying preprocessing method...",
-        total=len(preprocessing_config),
-    ):
-        image_copy = np.array(image, copy=True)
-        processed_image = apply_standard_preprocessing(image_copy, method, params)
-        preprocessed_images.append(np.array(processed_image))
+    if show_process:
+        for method, params in track(
+            sequence=preprocessing_config.items(),
+            description="Applying preprocessing method...",
+            total=len(preprocessing_config),
+        ):
+            image_copy = np.array(image, copy=True)
+            processed_image = apply_standard_preprocessing(image_copy, method, params)
+            preprocessed_images.append(np.array(processed_image))
+    else:
+        for method, params in preprocessing_config.items():
+            image_copy = np.array(image, copy=True)
+            processed_image = apply_standard_preprocessing(image_copy, method, params)
+            preprocessed_images.append(np.array(processed_image))
 
     averaged_image = cast(npt.NDArray[np.float64], np.mean(preprocessed_images, axis=0))
     return Image.fromarray(averaged_image.astype(np.uint8))
@@ -102,7 +108,7 @@ def metrics_calculation(
     predictions: List[Path] | Path,
     targets: List[Path] | Path,
     metrics: MetricCollection,
-    transformations: vision_trans.Compose | None = None,
+    transformations: vision_trans.Compose | None = None
 ) -> None:
     if isinstance(predictions, Path):
         predictions = [predictions]
@@ -127,8 +133,8 @@ def metrics_calculation(
         with Image.open(target) as target_img:
             target_img = target_img.convert("L")
 
-        predition_tensor = cast(torch.Tensor, transformations(prediction_img))
-        target_tensor = cast(torch.Tensor, transformations(target_img))
+        predition_tensor: torch.Tensor = transformations(prediction_img)
+        target_tensor: torch.Tensor = transformations(target_img)
 
         metric_result: Dict[str, Any] = metrics(predition_tensor.unsqueeze(0), target_tensor.unsqueeze(0))
 
@@ -138,4 +144,4 @@ def metrics_calculation(
             avg_metrics[key] += value.item()
 
     for key, value in avg_metrics.items():
-        print(f"{key}:{value / len(predictions)}")
+        print(f"{key}: {value / len(predictions)}")

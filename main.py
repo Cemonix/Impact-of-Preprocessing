@@ -1,10 +1,12 @@
 from typing import Optional, Any, Dict, List, cast
 import os
 from pathlib import Path
+from concurrent.futures import ProcessPoolExecutor
 import numpy as np
 from numpy import typing as npt
 from PIL import Image
 from rich.progress import track
+import torch
 from torch import nn
 from torchmetrics import JaccardIndex, MetricCollection
 from torchmetrics.image import PeakSignalNoiseRatio, StructuralSimilarityIndexMeasure
@@ -56,20 +58,21 @@ def create_dataset_main() -> None:
 def apply_model_and_create_dataset() -> None:
     # Parameters:
     # ---------------
-    model_type = DnCNN
+    model_type = DenoisingAutoencoder
     image_dir = Path("data/main_dataset/final_images")
-    save_dir = Path("data/main_dataset/dncnn_denoised_images")
+    save_dir = Path("data/main_dataset/dae_denoised_images_lungs")
     path_to_checkpoint = Path(
-        "lightning_logs/DNCNN_main_dataset/checkpoints/epoch=55-step=17920.ckpt"
+        "models/DAE/DAE_main_dataset/checkpoints/epoch=17-step=6336.ckpt"
     )
+    file_suffix = "png"
     walk_recursive = False
-    # ---------------
     transformations = vision_trans.Compose(
         [
             vision_trans.Resize((256, 256)),
             vision_trans.ToTensor(),
         ]
     )
+    # ---------------
 
     model = model_type.load_from_checkpoint(checkpoint_path=path_to_checkpoint)
     model.to("cpu")
@@ -77,7 +80,14 @@ def apply_model_and_create_dataset() -> None:
 
     images_paths: List[Path] = []
     for dirpath, _, filenames in os.walk(image_dir):
-        images_paths.extend([Path(dirpath, filename) for filename in filenames])
+        current_dir_paths = sorted(
+            [
+                Path(dirpath, filename)
+                for filename in filenames
+                if filename.split(".")[-1] == file_suffix
+            ]
+        )
+        images_paths.extend(current_dir_paths)
         if not walk_recursive:
             break
 
@@ -87,10 +97,77 @@ def apply_model_and_create_dataset() -> None:
         total=len(images_paths),
     ):
         image = load_image(image_path)
-        image_tensor = transformations(image)
-        prediction = model(image_tensor.unsqueeze(0))  # type: ignore
+        image_tensor: torch.Tensor = transformations(image)
+        prediction: torch.Tensor = model(image_tensor.unsqueeze(0))
+        prediction = prediction.clamp(0, 1)
         pred_image: Image.Image = to_pil_image(prediction.squeeze(0).squeeze(0))
         pred_image.save(save_dir / image_path.name)
+
+
+def __process_image(
+    image_path: Path, save_dir: Path, transformations, preprocessing_config
+) -> None:
+    image = load_image(image_path)
+    resized_image = transformations(image)
+    denoised_image = standard_preprocessing_ensemble_averaging(
+        np.array(resized_image), preprocessing_config, show_process=False
+    )
+    denoised_image.save(save_dir / image_path.name)
+
+
+def apply_ensemble_and_create_dataset() -> None:
+    # Parameters:
+    # ---------------
+    image_dir = Path("data/main_dataset/final_images")
+    save_dir = Path("data/main_dataset/ensemble_denoised_images_lungs")
+    preprocessing_config = cast(
+        Dict[str, Dict[str, Any]],
+        load_config(Path("configs/standard_preprocessing_config.yaml")),
+    )
+    transformations = vision_trans.Compose([vision_trans.Resize((256, 256))])
+    file_suffix = "png"
+    walk_recursive = False
+    parallel = True  # Cannot be used with Frost filter
+    # ---------------
+    images_paths: List[Path] = []
+    for dirpath, _, filenames in os.walk(image_dir):
+        current_dir_paths = sorted(
+            [
+                Path(dirpath, filename)
+                for filename in filenames
+                if filename.split(".")[-1] == file_suffix
+            ]
+        )
+        images_paths.extend(current_dir_paths)
+        if not walk_recursive:
+            break
+
+    if parallel:
+        with ProcessPoolExecutor() as executor:
+            futures = [
+                executor.submit(
+                    __process_image,
+                    image_path,
+                    save_dir,
+                    transformations,
+                    preprocessing_config,
+                )
+                for image_path in images_paths
+            ]
+
+            for future in track(
+                futures,
+                description="Making predictions and moving images...",
+                total=len(futures),
+            ):
+                future.result()
+    else:
+        for image_path in track(
+            sequence=images_paths,
+            description="Making predictions and moving images...",
+            total=len(images_paths),
+        ):
+            __process_image(image_path, save_dir, transformations, preprocessing_config)
 
 
 def train_unet_model() -> None:
@@ -162,7 +239,7 @@ def test_unet_model() -> None:
             vision_trans.RandomAutocontrast(p=0.3),
             vision_trans.RandomEqualize(p=0.4),
             vision_trans.Resize((256, 256)),
-            vision_trans.ToTensor()
+            vision_trans.ToTensor(),
         ]
     )
     # ---------------
@@ -197,7 +274,7 @@ def train_multiclass_unet_model() -> None:
             vision_trans.RandomAutocontrast(p=0.3),
             vision_trans.RandomEqualize(p=0.4),
             vision_trans.Resize((256, 256)),
-            vision_trans.ToTensor()
+            vision_trans.ToTensor(),
         ]
     )
     # ---------------
@@ -260,10 +337,7 @@ def train_preprocessing_model() -> None:
         }
     )
     transformations = vision_trans.Compose(
-        [
-            vision_trans.Resize((256, 256)),
-            vision_trans.ToTensor()
-        ]
+        [vision_trans.Resize((256, 256)), vision_trans.ToTensor()]
     )
     augmentations = vision_trans.Compose(
         [
@@ -275,7 +349,7 @@ def train_preprocessing_model() -> None:
             vision_trans.RandomEqualize(p=0.4),
             vision_trans.RandomHorizontalFlip(p=0.5),
             vision_trans.Resize((256, 256)),
-            vision_trans.ToTensor()
+            vision_trans.ToTensor(),
         ]
     )
     # ---------------
@@ -317,7 +391,7 @@ def train_preprocessing_model() -> None:
         num_of_workers=preprocessing_config.dataloader.num_workers,
         train_ratio=preprocessing_config.dataloader.train_ratio,
         transform=transformations,
-        augmentations=augmentations
+        augmentations=augmentations,
     )
 
     early_stop_callback = EarlyStopping(
@@ -345,7 +419,7 @@ def test_preprocessing_model() -> None:
     # images = load_image(Path("data/main_dataset/original_images/CHNCXR_0005_0.png"))
     images = load_image(Path("data/main_dataset/original_images/1.jpg"))
     path_to_checkpoint = Path(
-        "lightning_logs/version_1/checkpoints/epoch=99-step=2500.ckpt"
+        "models/DnCNN/DNCNN_main_dataset/checkpoints/epoch=55-step=17920.ckpt"
     )
     transformations = vision_trans.Compose(
         [
@@ -353,7 +427,7 @@ def test_preprocessing_model() -> None:
             vision_trans.ToTensor(),
         ]
     )
-    model_type = DenoisingAutoencoder
+    model_type = DnCNN
     model_params = {"architecture_type": model_type}
     noise_types = ["speckle_noise", "poisson_noise", "salt_and_pepper_noise"]
     # ---------------
@@ -491,12 +565,19 @@ def test_preproccesing_ensemble_method() -> None:
 def measure_metrics_for_images() -> None:
     # Parameters:
     # ---------------
-    predictions_path = Path("data/main_dataset/final_images/")
+    predictions_path = Path("data/main_dataset/dncnn_denoised_images_lungs/")
     targets_path = Path("data/main_dataset/original_images/")
+    file_suffix = "png"
     predictions = [
-        predictions_path / img_path for img_path in sorted(os.listdir(predictions_path))
+        predictions_path / img_path
+        for img_path in sorted(os.listdir(predictions_path))
+        if img_path.split(".")[-1] == file_suffix
     ]
-    targets = [targets_path / img_path for img_path in sorted(os.listdir(targets_path))]
+    targets = [
+        targets_path / img_path
+        for img_path in sorted(os.listdir(targets_path))
+        if img_path.split(".")[-1] == file_suffix
+    ]
     metrics = MetricCollection(
         {
             "PSNR": PeakSignalNoiseRatio(),
@@ -543,8 +624,10 @@ def measure_noise_std() -> None:
 
 if __name__ == "__main__":
     # train_preprocessing_model()
-    test_preprocessing_model()
-    # measure_metrics_for_images()
+    # test_preprocessing_model()
+    # apply_model_and_create_dataset()
+    # apply_ensemble_and_create_dataset()
+    measure_metrics_for_images()
 
     # TODO: Natrénovat Multiclass UNet se vstupem z DnCNN
 
