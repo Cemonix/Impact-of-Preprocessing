@@ -1,18 +1,18 @@
 model:
   n_channels: 1
-  n_classes: 33
+  n_classes: 33 # 1
   learning_rate: 0.001
 
 dataloader:
-  # image_dir: "data/main_dataset/dncnn_denoised_images/"
+  image_dir: "data/main_dataset/dae_denoised_images_teeth/"
   # masks_dir: "data/main_dataset/masks/"
-  image_dir: "data/TeethSegmentation/noised_images/"
+  # image_dir: "data/TeethSegmentation/chosen_images/"
   masks_dir: "data/TeethSegmentation/chosen_anns/"
-  batch_size: 16
+  batch_size: 14
   num_workers: 8
   train_ratio: 0.8
 
 training:
   accelerator: "cuda"
-  max_epochs: 75
+  max_epochs: 60
   log_every_n_steps: 10

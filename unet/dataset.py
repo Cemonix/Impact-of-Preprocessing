@@ -6,6 +6,7 @@ from PIL import Image
 import torch
 from torch.utils.data import Dataset
 import torchvision.transforms.v2 as vision_trans
+from torchvision.transforms.functional import pil_to_tensor
 
 from common.data_manipulation import create_mask_from_annotation
 
@@ -88,7 +89,9 @@ class TeethSegmentationDataset(Dataset):
 
         image = Image.open(img_path).convert("L")
         mask = Image.fromarray(create_mask_from_annotation(annotation_path))
+        mask = mask.resize((256, 256), resample=Image.NEAREST) # TODO: pass rezised values as parameter
 
-        image, mask = self.transform(image, mask)
-        mask = cast(torch.Tensor, mask)
-        return image, mask.squeeze(0).type(torch.long)
+        image = self.transform(image)
+        mask = pil_to_tensor(mask).squeeze(0)
+        return image, mask.type(torch.long)
+    

@@ -194,7 +194,7 @@ def create_mask_from_annotation(path_to_annotation: Path) -> npt.NDArray[np.uint
 
     mask = Image.new('I', (width, height), 0)
     draw = ImageDraw.Draw(mask)
-
+    
     for obj in annotation['objects']:
         class_id = int(obj['classTitle'])
         polygon = [(int(x), int(y)) for x, y in obj['points']['exterior']]

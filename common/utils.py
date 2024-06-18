@@ -108,7 +108,8 @@ def metrics_calculation(
     predictions: List[Path] | Path,
     targets: List[Path] | Path,
     metrics: MetricCollection,
-    transformations: vision_trans.Compose | None = None
+    transformations: vision_trans.Compose | None = None,
+    name: str | None = None
 ) -> None:
     if isinstance(predictions, Path):
         predictions = [predictions]
@@ -125,7 +126,7 @@ def metrics_calculation(
     avg_metrics: Dict[str, float] = {}
     for prediction, target in track(
         sequence=zip(predictions, targets),
-        description="Measuring metrics...",
+        description=f"Measuring metrics of {name}..." if name is not None else f"Measuring metrics...",
         total=len(predictions),
     ):
         with Image.open(prediction) as prediction_img:

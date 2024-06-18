@@ -173,10 +173,16 @@ def apply_ensemble_and_create_dataset() -> None:
 def train_unet_model() -> None:
     # Parameters:
     # ---------------
-    early_stopping = True
+    early_stopping = False
     metrics = None
     transformations = vision_trans.Compose(
         [
+            vision_trans.RandomApply(
+                [vision_trans.GaussianBlur(kernel_size=(5, 9), sigma=(0.1, 5))], p=0.2
+            ),
+            vision_trans.RandomAdjustSharpness(sharpness_factor=2, p=0.2),
+            vision_trans.RandomAutocontrast(p=0.3),
+            vision_trans.RandomEqualize(p=0.4),
             vision_trans.Resize((256, 256)),
             vision_trans.ToTensor(),
         ]
@@ -225,23 +231,25 @@ def test_unet_model() -> None:
     # Parameters:
     # ---------------
     path_to_checkpoint = Path(
-        "models/UNet/MultiClassUNet/multiclass_unet_teeth_noised_dataset/checkpoints/epoch=74-step=1500.ckpt"
+        "models/UNet/MultiClassUNet/DnCNN/multiclass_unet_teeth_dncnn_dataset/checkpoints/epoch=59-step=1380.ckpt"
     )
-    images = load_image(Path("data/TeethSegmentation/noised_images/1.jpg"))
-    targets = Path("data/TeethSegmentation/chosen_anns/1.jpg.json")
-    # targets = load_image(targets)
+    # images = load_image(Path("data/TeethSegmentation/img/10.jpg"))
+    images = load_image(Path("data/main_dataset/dae_denoised_images_teeth/10.jpg"))
+    targets = Path("data/TeethSegmentation/chosen_anns/10.jpg.json")
+
+    # path_to_checkpoint = Path(
+    #     "models/UNet/BinaryUNet/Noised/unet_noised_dataset/checkpoints/epoch=14-step=3000.ckpt"
+    # )
+    # images = load_image(Path("data/main_dataset/final_images/CHNCXR_0086_0.png"))
+    # targets = load_image(Path("data/main_dataset/masks/CHNCXR_0086_0.png"))
     transformations = vision_trans.Compose(
         [
-            vision_trans.RandomApply(
-                [vision_trans.GaussianBlur(kernel_size=(5, 9), sigma=(0.1, 5))], p=0.2
-            ),
-            vision_trans.RandomAdjustSharpness(sharpness_factor=2, p=0.2),
-            vision_trans.RandomAutocontrast(p=0.3),
-            vision_trans.RandomEqualize(p=0.4),
             vision_trans.Resize((256, 256)),
             vision_trans.ToTensor(),
         ]
     )
+    is_multiclass = True
+    model_type = MulticlassUNetModel
     # ---------------
 
     if isinstance(images, Image.Image):
@@ -250,17 +258,17 @@ def test_unet_model() -> None:
         targets = [targets]
 
     unet_inference = UnetInference(
-        model_type=BinaryUNetModel,
+        model_type=model_type,
         path_to_checkpoint=path_to_checkpoint,
         transformations=transformations,
     )
-    unet_inference.inference_display(images, targets, multiclass=True)
+    unet_inference.inference_display(images, targets, multiclass=is_multiclass)
 
 
 def train_multiclass_unet_model() -> None:
     # Parameters:
     # ---------------
-    early_stopping = True
+    early_stopping = False
     loss_func = nn.CrossEntropyLoss()
     metrics = MetricCollection(
         {"jaccard_index": JaccardIndex(task="multiclass", num_classes=33)}
@@ -273,7 +281,7 @@ def train_multiclass_unet_model() -> None:
             vision_trans.RandomAdjustSharpness(sharpness_factor=2, p=0.2),
             vision_trans.RandomAutocontrast(p=0.3),
             vision_trans.RandomEqualize(p=0.4),
-            vision_trans.Resize((256, 256)),
+            vision_trans.Resize((256, 256), interpolation=vision_trans.InterpolationMode.NEAREST),
             vision_trans.ToTensor(),
         ]
     )
@@ -565,19 +573,11 @@ def test_preproccesing_ensemble_method() -> None:
 def measure_metrics_for_images() -> None:
     # Parameters:
     # ---------------
+    model_names = ["dncnn", "dae", "ensemble"]
+    image_types = ["lungs", "teeth"]
+    file_suffixes = ["png", "jpg"]
     predictions_path = Path("data/main_dataset/dncnn_denoised_images_lungs/")
     targets_path = Path("data/main_dataset/original_images/")
-    file_suffix = "png"
-    predictions = [
-        predictions_path / img_path
-        for img_path in sorted(os.listdir(predictions_path))
-        if img_path.split(".")[-1] == file_suffix
-    ]
-    targets = [
-        targets_path / img_path
-        for img_path in sorted(os.listdir(targets_path))
-        if img_path.split(".")[-1] == file_suffix
-    ]
     metrics = MetricCollection(
         {
             "PSNR": PeakSignalNoiseRatio(),
@@ -591,7 +591,28 @@ def measure_metrics_for_images() -> None:
         ]
     )
     # ---------------
-    metrics_calculation(predictions, targets, metrics, transformations)
+    for model_name in model_names:
+        for image_type, file_suffix in zip(image_types, file_suffixes):
+            predictions_path = Path(
+                f"data/main_dataset/{model_name}_denoised_images_{image_type}/"
+            )
+            predictions = [
+                predictions_path / img_path
+                for img_path in sorted(os.listdir(predictions_path))
+                if img_path.split(".")[-1] == file_suffix
+            ]
+            targets = [
+                targets_path / img_path
+                for img_path in sorted(os.listdir(targets_path))
+                if img_path.split(".")[-1] == file_suffix
+            ]
+            metrics_calculation(
+                predictions,
+                targets,
+                metrics,
+                transformations,
+                f"{model_name}: {image_type}",
+            )
 
 
 def measure_noise_std() -> None:
@@ -623,25 +644,13 @@ def measure_noise_std() -> None:
 
 
 if __name__ == "__main__":
+    # train_unet_model()
+    # test_unet_model()
+    train_multiclass_unet_model()
     # train_preprocessing_model()
     # test_preprocessing_model()
     # apply_model_and_create_dataset()
     # apply_ensemble_and_create_dataset()
-    measure_metrics_for_images()
-
-    # TODO: Natrénovat Multiclass UNet se vstupem z DnCNN
-
-    # TODO: Natrénovat DAE
-    # TODO: Natrénovat UNet se vstupem z DAE
-    # TODO: Natrénovat Multiclass UNet se vstupem z DAE
-
-    # TODO: Vyzkoušet všechny klasické filtrovací algoritmy a nastavit parametry
-    # TODO: Vytvořit datovou sadu s využitím klasických filtrovacích technik
-    # TODO: Natrénovat UNet se vstupem z klasických filtrů
-    # TODO: Natrénovat Multiclass UNet se vstupem z klasických filtrů
-
-    # TODO: Úprava obrazu pomocí ekvalizace a kontrastu
-    # TODO: Augmentace dat
+    # measure_metrics_for_images()
 
     # TODO: Loss - https://github.com/francois-rozet/piqa | https://stackoverflow.com/questions/53956932/use-pytorch-ssim-loss-function-in-my-model
-    # TODO: Denoising autoencoder skip connections
