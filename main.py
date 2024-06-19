@@ -231,25 +231,20 @@ def test_unet_model() -> None:
     # Parameters:
     # ---------------
     path_to_checkpoint = Path(
-        "models/UNet/MultiClassUNet/DnCNN/multiclass_unet_teeth_dncnn_dataset/checkpoints/epoch=59-step=1380.ckpt"
+        "models/UNet/BinaryUNet/DnCNN/unet_denoised_dncnn_dataset/checkpoints/epoch=14-step=3000.ckpt"
     )
-    # images = load_image(Path("data/TeethSegmentation/img/10.jpg"))
-    images = load_image(Path("data/main_dataset/dae_denoised_images_teeth/10.jpg"))
-    targets = Path("data/TeethSegmentation/chosen_anns/10.jpg.json")
-
-    # path_to_checkpoint = Path(
-    #     "models/UNet/BinaryUNet/Noised/unet_noised_dataset/checkpoints/epoch=14-step=3000.ckpt"
-    # )
-    # images = load_image(Path("data/main_dataset/final_images/CHNCXR_0086_0.png"))
-    # targets = load_image(Path("data/main_dataset/masks/CHNCXR_0086_0.png"))
+    images = load_image(
+        Path("data/main_dataset/dncnn_denoised_images_lungs/CHNCXR_0086_0.png")
+    )
+    targets = load_image(Path("data/main_dataset/masks/CHNCXR_0086_0.png"))
     transformations = vision_trans.Compose(
         [
             vision_trans.Resize((256, 256)),
             vision_trans.ToTensor(),
         ]
     )
-    is_multiclass = True
-    model_type = MulticlassUNetModel
+    is_multiclass = False
+    model_type = BinaryUNetModel
     # ---------------
 
     if isinstance(images, Image.Image):
@@ -281,7 +276,9 @@ def train_multiclass_unet_model() -> None:
             vision_trans.RandomAdjustSharpness(sharpness_factor=2, p=0.2),
             vision_trans.RandomAutocontrast(p=0.3),
             vision_trans.RandomEqualize(p=0.4),
-            vision_trans.Resize((256, 256), interpolation=vision_trans.InterpolationMode.NEAREST),
+            vision_trans.Resize(
+                (256, 256), interpolation=vision_trans.InterpolationMode.NEAREST
+            ),
             vision_trans.ToTensor(),
         ]
     )
@@ -427,7 +424,7 @@ def test_preprocessing_model() -> None:
     # images = load_image(Path("data/main_dataset/original_images/CHNCXR_0005_0.png"))
     images = load_image(Path("data/main_dataset/original_images/1.jpg"))
     path_to_checkpoint = Path(
-        "models/DnCNN/DNCNN_main_dataset/checkpoints/epoch=55-step=17920.ckpt"
+        "models/DnCNN/DnCNN_main_dataset/checkpoints/epoch=55-step=17920.ckpt"
     )
     transformations = vision_trans.Compose(
         [
@@ -646,9 +643,9 @@ def measure_noise_std() -> None:
 if __name__ == "__main__":
     # train_unet_model()
     # test_unet_model()
-    train_multiclass_unet_model()
+    # train_multiclass_unet_model()
     # train_preprocessing_model()
-    # test_preprocessing_model()
+    test_preprocessing_model()
     # apply_model_and_create_dataset()
     # apply_ensemble_and_create_dataset()
     # measure_metrics_for_images()
