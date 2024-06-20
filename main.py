@@ -15,6 +15,7 @@ from torchvision.transforms.v2.functional import to_pil_image
 from lightning.pytorch import Trainer
 from lightning.pytorch.callbacks.early_stopping import EarlyStopping
 import mlflow.pytorch
+from mlflow.tracking import MlflowClient
 
 from common.data_manipulation import (
     create_mask_from_annotation,
@@ -615,29 +616,72 @@ def measure_metrics_for_images() -> None:
 def measure_noise_std() -> None:
     # Parameters:
     # ---------------
-    image = load_image(Path("data/dataset/images/CHNCXR_0005_0.png"))
+    image = load_image(Path("data/main_dataset/original_images/CHNCXR_0005_0.png"))
     save_path = None
-    noise_type = "poisson_noise"
-    # ---------------
-
+    noise_types = ["poisson_noise", "speckle_noise", "salt_and_pepper_noise"]
     noise_transform_config = cast(
         Dict[str, Dict[str, Any]],
         load_config(Path("configs/noise_transforms_config.yaml")),
     )
-    params = noise_transform_config[noise_type]
-    noised_image = apply_noise_transform(np.array(image).copy(), noise_type, params)
-
+    # ---------------
+    noised_image = apply_noises(
+        np.array(image), noise_types, noise_transform_config, True
+    )
     eigenvalues, noise_std = estimate_noise_in_image(np.array(noised_image))
+
     plot(
         data=eigenvalues,
         fig_size=(10, 6),
+        fontsize=25,
         marker="o",
-        title="PCA Eigenvalues of Image Patches",
-        xlabel="Component Index",
-        ylabel="Eigenvalue (Explained Variance)",
+        title="Hodnoty vlastních čísel PCA",
+        xlabel="Index komponenty",
+        ylabel="Vlastní číslo (směrodatná odchylka)",
         save_path=save_path,
     )
     print("Estimated noise standard deviation:", noise_std)
+
+
+def plot_mlflow_runs_metrics() -> None:
+    # Parameters:
+    # ---------------
+    run_names = {
+        "MulticlassUNet_original": "Vícetřídní U-Net - originální snímky",
+        "MulticlassUNet_noised": "Vícetřídní U-Net - zašuměné snímky",
+        "MulticlassUNet_ensemble": "Vícetřídní U-Net - ensemble averaging",
+        "MulticlassUNet_dncnn": "Vícetřídní U-Net - DnCNN",
+        "MulticlassUNet_dae": "Vícetřídní U-Net - DAE",
+    }
+    metric_name = "val_jaccard_index"
+    title = "Metrika Jaccard index v čase učení pro vícetřídní U-Net modely"
+    # ---------------
+    client = MlflowClient(tracking_uri="http://localhost:5000")
+    experiment = client.get_experiment_by_name("Default")
+    if experiment is not None:
+        runs = client.search_runs(experiment_ids=experiment.experiment_id)
+
+        data = {name: {"steps": [], "values": []} for name in run_names.values()}
+        for run in runs:
+            run_name = cast(str, run.info.run_name)
+            if run_name in run_names:
+                run_id = run.info.run_id
+                metrics = client.get_metric_history(run_id, metric_name)
+
+                for metric in metrics:
+                    data[run_names[run_name]]["steps"].append(metric.step)
+                    data[run_names[run_name]]["values"].append(metric.value)
+
+        plot(
+            data=[data[key]["values"] for key in data.keys()],
+            fig_size=(10, 6),
+            fontsize=25,
+            marker="o",
+            title=title,
+            xlabel="Epocha",
+            ylabel="Jaccard index",
+            labels=[run_name for run_name in run_names.values()],
+            legend=True,
+        )
 
 
 if __name__ == "__main__":
@@ -645,9 +689,11 @@ if __name__ == "__main__":
     # test_unet_model()
     # train_multiclass_unet_model()
     # train_preprocessing_model()
-    test_preprocessing_model()
+    # test_preprocessing_model()
     # apply_model_and_create_dataset()
     # apply_ensemble_and_create_dataset()
     # measure_metrics_for_images()
+    # measure_noise_std()
+    plot_mlflow_runs_metrics()
 
     # TODO: Loss - https://github.com/francois-rozet/piqa | https://stackoverflow.com/questions/53956932/use-pytorch-ssim-loss-function-in-my-model

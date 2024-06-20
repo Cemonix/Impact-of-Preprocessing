@@ -1,4 +1,4 @@
-from typing import List, Tuple, Any
+from typing import List, Tuple, Any, Optional
 from pathlib import Path
 from PIL import Image
 import matplotlib.pyplot as plt
@@ -6,15 +6,31 @@ import matplotlib.patches as patches
 
 
 def plot(
-    data: Any, fig_size: Tuple[int, int], marker: str | None,
-    title: str, xlabel: str | None, ylabel: str | None, save_path: Path | None = None
+    data: Any,
+    fig_size: Tuple[int, int],
+    marker: Optional[str],
+    title: str,
+    xlabel: Optional[str],
+    ylabel: Optional[str],
+    labels: Optional[List[str]] = None,
+    fontsize: int = 20,
+    legend: bool = False,
+    save_path: Optional[Path] = None,
 ) -> None:
     plt.figure(figsize=fig_size)
-    plt.plot(data, marker=marker)
-    plt.title(title)
-    plt.xlabel(xlabel) if xlabel is not None else None
-    plt.ylabel(ylabel) if ylabel is not None else None
+    if labels is not None:
+        for x, label in zip(data, labels):
+            plt.plot(x, marker=marker, label=label)
+    else:
+        plt.plot(data, marker=marker)
+    plt.title(title, fontsize=fontsize)
+    plt.xlabel(xlabel, fontsize=fontsize) if xlabel is not None else None
+    plt.ylabel(ylabel, fontsize=fontsize) if ylabel is not None else None
+    plt.tick_params(axis="both", which="major", labelsize=18)
     plt.grid(True)
+
+    if legend:
+        plt.legend(fontsize=fontsize - 5)
 
     if save_path is not None:
         plt.savefig(save_path)
