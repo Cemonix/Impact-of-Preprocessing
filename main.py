@@ -642,6 +642,61 @@ def measure_noise_std() -> None:
     print("Estimated noise standard deviation:", noise_std)
 
 
+def images_pixel_intensities() -> None:
+    # Parameters:
+    # ---------------
+    image_dir_path = Path("data/main_dataset/original_images/")
+    images_suffixes = ["png"]
+    noise_types = ["poisson_noise", "speckle_noise", "salt_and_pepper_noise"]
+    noise_transform_config = cast(
+        Dict[str, Dict[str, Any]],
+        load_config(Path("configs/noise_transforms_config.yaml")),
+    )
+    # ---------------
+    image_paths = [
+        image_dir_path / img_path
+        for img_path in sorted(os.listdir(image_dir_path))
+        if img_path.split(".")[-1] in images_suffixes
+    ][:100]
+
+    images: List[npt.NDArray] = [
+        np.array(load_image(image_path)) for image_path in image_paths
+    ]
+
+    noise_combinations = (
+        ["original"]
+        + [[noise] for noise in noise_types]
+        + [[noise_types[i], noise_types[i + 1]] for i in range(len(noise_types) - 1)]
+        + [noise_types]
+    )
+
+    from matplotlib import pyplot as plt
+
+    _, axes = plt.subplots(3, 3, figsize=(15, 10))
+    for idx, noise_comb in enumerate(noise_combinations):
+        ax = axes[idx // 3, idx % 3]
+        if noise_comb == "original":
+            all_pixel_intensities = np.concatenate([img.flatten() for img in images])
+            ax.hist(all_pixel_intensities, bins=128, range=(0, 255), density=True)
+            ax.set_title("Histogram intenzit pixelů: Originální snímky")
+        elif not isinstance(noise_comb, str):
+            noised_images = [
+                np.array(apply_noises(image.copy(), noise_comb, noise_transform_config))
+                for image in images
+            ]
+            all_pixel_intensities = np.concatenate(
+                [img.flatten() for img in noised_images]
+            )
+            ax.hist(all_pixel_intensities, bins=128, range=(0, 255), density=True)
+            ax.set_title(f"Histogram intenzit pixelů: {'_and_'.join(noise_comb)}")
+
+        ax.set_xlabel("Intenzita pixelů")
+        ax.set_ylabel("Frekvence")
+
+    plt.tight_layout()
+    plt.show()
+
+
 def plot_mlflow_runs_metrics() -> None:
     # Parameters:
     # ---------------
@@ -694,6 +749,7 @@ if __name__ == "__main__":
     # apply_ensemble_and_create_dataset()
     # measure_metrics_for_images()
     # measure_noise_std()
-    plot_mlflow_runs_metrics()
+    # plot_mlflow_runs_metrics()
+    images_pixel_intensities()
 
     # TODO: Loss - https://github.com/francois-rozet/piqa | https://stackoverflow.com/questions/53956932/use-pytorch-ssim-loss-function-in-my-model
