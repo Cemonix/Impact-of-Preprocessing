@@ -1,7 +1,10 @@
-from typing import Optional, Any, Dict, List, cast
+from asyncio import as_completed
+from typing import Optional, Any, Dict, List, Tuple, cast
 import os
 from pathlib import Path
-from concurrent.futures import ProcessPoolExecutor
+import json
+from concurrent.futures import ProcessPoolExecutor, as_completed
+from cv2 import FastFeatureDetector_NONMAX_SUPPRESSION
 import numpy as np
 from numpy import typing as npt
 from PIL import Image
@@ -14,6 +17,7 @@ import torchvision.transforms.v2 as vision_trans
 from torchvision.transforms.v2.functional import to_pil_image
 from lightning.pytorch import Trainer
 from lightning.pytorch.callbacks.early_stopping import EarlyStopping
+from torchvision.transforms.functional import pil_to_tensor
 import mlflow.pytorch
 from mlflow.tracking import MlflowClient
 
@@ -613,6 +617,167 @@ def measure_metrics_for_images() -> None:
             )
 
 
+def __calculate_metrics_ensemble_averaging(
+    original_image_path: Path, noise_image_path: Path, preprocessing_config: Dict[str, Any],
+    transformations, metrics
+) -> Dict[str, torch.Tensor]:
+    with Image.open(original_image_path) as img:
+        img = img.convert("L")
+    with Image.open(noise_image_path) as noised_img:
+        noised_img = noised_img.convert("L")
+
+    image_tensor: torch.Tensor = transformations(img).unsqueeze(0)
+    denoised_image = standard_preprocessing_ensemble_averaging(
+        np.array(noised_img), preprocessing_config, False
+    )
+    prediction = pil_to_tensor(denoised_image) / 255
+    prediction: torch.Tensor = transformations(prediction).unsqueeze(0)
+    image_tensor = image_tensor.detach()
+    prediction = prediction.detach()
+    return metrics(prediction, image_tensor)
+
+
+def measure_metrics_for_denoised_images() -> None:
+    # Parameters:
+    # ---------------
+    original_images_path = Path("data/main_dataset/original_images/")
+    noised_images_path = Path("data/main_dataset/final_images/")
+    noise_jsons = [
+        Path("data/main_dataset/lungs_dataset_info.json"),
+        Path("data/main_dataset/teeth_dataset_info.json"),
+    ]
+    noise_types = [
+        ["poisson_noise"],
+        ["speckle_noise"],
+        ["salt_and_pepper_noise"],
+        ["poisson_noise", "speckle_noise"],
+        ["poisson_noise", "salt_and_pepper_noise"],
+        ["speckle_noise", "salt_and_pepper_noise"],
+        ["poisson_noise", "speckle_noise", "salt_and_pepper_noise"],
+    ]
+    model_info = {
+        "ensemble_averaging": "",
+        DnCNN: Path(
+            "models/DnCNN/DnCNN_main_dataset/checkpoints/epoch=55-step=17920.ckpt"
+        ),
+        DenoisingAutoencoder: Path(
+            "models/DAE/DAE_main_dataset/checkpoints/epoch=17-step=6336.ckpt"
+        ),
+    }
+    transformations = vision_trans.Compose(
+        [
+            vision_trans.Resize((256, 256), antialias=True),
+            vision_trans.ToTensor(),
+        ]
+    )
+    metrics = MetricCollection(
+        {
+            "PSNR": PeakSignalNoiseRatio(),
+            "SSIM": StructuralSimilarityIndexMeasure(),
+        }
+    )
+    # ---------------
+    def get_image_paths(
+        original_images_path, noised_images_path: Path, json_files: List[Path], noise_types: List[str]
+    ) -> Tuple[List[Path], List[Path]]:
+        import ast
+        original_images_paths = []
+        noised_image_paths = []
+
+        json_data = []
+        for json_file in json_files:
+            with open(json_file, "r") as f:
+                json_data.append(json.load(f))
+
+        combined_json_data = {k: v for d in json_data for k, v in d.items()}
+
+        for img_path in noised_images_path.iterdir():
+            img_name = img_path.stem
+            if img_name in combined_json_data:
+                noise_info: str = combined_json_data[img_name]
+                noise_type_str = noise_info.split("|")[0].split(":")[1].strip()
+                if noise_type_str[0] == "[": 
+                    noise_types_in_img = ast.literal_eval(noise_type_str)
+                else:
+                    noise_types_in_img = [noise_type_str]
+
+                if (
+                    all(noise_type in noise_types_in_img for noise_type in noise_types) and 
+                    len(noise_types_in_img) == len(noise_types)
+                ):
+                    original_images_paths.append(original_images_path / (img_name + img_path.suffix))
+                    noised_image_paths.append(img_path)
+
+        return original_images_paths, noised_image_paths
+    
+    preprocessing_config = cast(
+        Dict[str, Dict[str, Any]],
+        load_config(Path("configs/standard_preprocessing_config.yaml")),
+    )
+    for model_type, model_path in model_info.items():
+        for noise_type_arr in noise_types:
+            if not isinstance(model_type, str):
+                model = model_type.load_from_checkpoint(checkpoint_path=model_path)
+                model.to("cpu")
+                model.eval()
+                
+            original_images_paths, noised_image_paths = get_image_paths(
+                original_images_path, noised_images_path, noise_jsons, noise_type_arr
+            )
+            avg_metrics: Dict[str, float] = {str(key): 0.0 for key in metrics.keys()}
+
+            if not isinstance(model_type, str):
+                for original_image_path, noise_image_path in track(
+                    zip(original_images_paths, noised_image_paths),
+                    f"Making predictions and calculating metrics...\nModel: {model_type}\nNoises: {noise_type_arr}\n",
+                    total=len(noised_image_paths),
+                ):
+                    with Image.open(original_image_path) as original_img:
+                        original_img = original_img.convert("L")
+
+                    with Image.open(noise_image_path) as noised_img:
+                        noised_img = noised_img.convert("L")
+
+                    image_tensor: torch.Tensor = transformations(original_img).unsqueeze(0)
+                    noised_image_tensor: torch.Tensor = transformations(noised_img).unsqueeze(0)
+                    prediction: torch.Tensor = model(noised_image_tensor).clamp(0, 1)
+                    image_tensor = image_tensor.detach()
+                    prediction = prediction.detach()
+                    metric_result: Dict[str, Any] = metrics(prediction, image_tensor)
+
+                    for key, value in metric_result.items():
+                        avg_metrics[key] += value.item()
+
+            elif model_type == "ensemble_averaging":
+                with ProcessPoolExecutor() as executor:
+                    futures = [
+                        executor.submit(
+                            __calculate_metrics_ensemble_averaging,
+                            original_images_path,
+                            noise_image_path,
+                            preprocessing_config,
+                            transformations,
+                            metrics,
+                        )
+                        for original_images_path, noise_image_path in zip(original_images_paths, noised_image_paths)
+                    ]
+
+                    for future in track(
+                        futures,
+                        f"Making predictions and calculating metrics...\nModel: {model_type}\nNoises: {noise_type_arr}",
+                        total=len(futures),
+                    ):
+                        result = future.result()
+                        for key, value in result.items():
+                            avg_metrics[key] += value.item()
+
+            for key in avg_metrics:
+                avg_metrics[key] /= len(noised_image_paths)
+                print(f"{key}: {avg_metrics[key]:.4f}")
+
+            print()
+
+
 def measure_noise_std() -> None:
     # Parameters:
     # ---------------
@@ -750,6 +915,8 @@ if __name__ == "__main__":
     # measure_metrics_for_images()
     # measure_noise_std()
     # plot_mlflow_runs_metrics()
-    images_pixel_intensities()
+    # images_pixel_intensities()
+
+    measure_metrics_for_denoised_images()
 
     # TODO: Loss - https://github.com/francois-rozet/piqa | https://stackoverflow.com/questions/53956932/use-pytorch-ssim-loss-function-in-my-model
