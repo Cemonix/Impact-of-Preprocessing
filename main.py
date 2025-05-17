@@ -618,9 +618,12 @@ def measure_metrics_for_images() -> None:
 
 
 def __calculate_metrics_ensemble_averaging(
-    original_image_path: Path, noise_image_path: Path, preprocessing_config: Dict[str, Any],
-    transformations, metrics
-) -> Dict[str, torch.Tensor]:
+    original_image_path: Path,
+    noise_image_path: Path,
+    preprocessing_config: Dict[str, Any],
+    transformations,
+    metrics,
+) -> Tuple[Path, Dict[str, torch.Tensor]]:
     with Image.open(original_image_path) as img:
         img = img.convert("L")
     with Image.open(noise_image_path) as noised_img:
@@ -634,7 +637,7 @@ def __calculate_metrics_ensemble_averaging(
     prediction: torch.Tensor = transformations(prediction).unsqueeze(0)
     image_tensor = image_tensor.detach()
     prediction = prediction.detach()
-    return metrics(prediction, image_tensor)
+    return original_image_path, metrics(prediction, image_tensor)
 
 
 def measure_metrics_for_denoised_images() -> None:
@@ -643,7 +646,7 @@ def measure_metrics_for_denoised_images() -> None:
     original_images_path = Path("data/main_dataset/original_images/")
     noised_images_path = Path("data/main_dataset/final_images/")
     noise_jsons = [
-        Path("data/main_dataset/lungs_dataset_info.json"),
+        # Path("data/main_dataset/lungs_dataset_info.json"),
         Path("data/main_dataset/teeth_dataset_info.json"),
     ]
     noise_types = [
@@ -671,16 +674,25 @@ def measure_metrics_for_denoised_images() -> None:
         ]
     )
     metrics = MetricCollection(
+        # {
+        #     "PSNR": PeakSignalNoiseRatio(),
+        #     "SSIM": StructuralSimilarityIndexMeasure(),
+        # }
         {
             "PSNR": PeakSignalNoiseRatio(),
             "SSIM": StructuralSimilarityIndexMeasure(),
         }
     )
+
     # ---------------
     def get_image_paths(
-        original_images_path, noised_images_path: Path, json_files: List[Path], noise_types: List[str]
+        original_images_path,
+        noised_images_path: Path,
+        json_files: List[Path],
+        noise_types: List[str],
     ) -> Tuple[List[Path], List[Path]]:
         import ast
+
         original_images_paths = []
         noised_image_paths = []
 
@@ -696,20 +708,21 @@ def measure_metrics_for_denoised_images() -> None:
             if img_name in combined_json_data:
                 noise_info: str = combined_json_data[img_name]
                 noise_type_str = noise_info.split("|")[0].split(":")[1].strip()
-                if noise_type_str[0] == "[": 
+                if noise_type_str[0] == "[":
                     noise_types_in_img = ast.literal_eval(noise_type_str)
                 else:
                     noise_types_in_img = [noise_type_str]
 
-                if (
-                    all(noise_type in noise_types_in_img for noise_type in noise_types) and 
-                    len(noise_types_in_img) == len(noise_types)
-                ):
-                    original_images_paths.append(original_images_path / (img_name + img_path.suffix))
+                if all(
+                    noise_type in noise_types_in_img for noise_type in noise_types
+                ) and len(noise_types_in_img) == len(noise_types):
+                    original_images_paths.append(
+                        original_images_path / (img_name + img_path.suffix)
+                    )
                     noised_image_paths.append(img_path)
 
         return original_images_paths, noised_image_paths
-    
+
     preprocessing_config = cast(
         Dict[str, Dict[str, Any]],
         load_config(Path("configs/standard_preprocessing_config.yaml")),
@@ -720,11 +733,12 @@ def measure_metrics_for_denoised_images() -> None:
                 model = model_type.load_from_checkpoint(checkpoint_path=model_path)
                 model.to("cpu")
                 model.eval()
-                
+
             original_images_paths, noised_image_paths = get_image_paths(
                 original_images_path, noised_images_path, noise_jsons, noise_type_arr
             )
             avg_metrics: Dict[str, float] = {str(key): 0.0 for key in metrics.keys()}
+            img_metric_result: dict[str, dict[str, float]] = {}
 
             if not isinstance(model_type, str):
                 for original_image_path, noise_image_path in track(
@@ -738,15 +752,22 @@ def measure_metrics_for_denoised_images() -> None:
                     with Image.open(noise_image_path) as noised_img:
                         noised_img = noised_img.convert("L")
 
-                    image_tensor: torch.Tensor = transformations(original_img).unsqueeze(0)
-                    noised_image_tensor: torch.Tensor = transformations(noised_img).unsqueeze(0)
+                    image_tensor: torch.Tensor = transformations(
+                        original_img
+                    ).unsqueeze(0)
+                    noised_image_tensor: torch.Tensor = transformations(
+                        noised_img
+                    ).unsqueeze(0)
                     prediction: torch.Tensor = model(noised_image_tensor).clamp(0, 1)
                     image_tensor = image_tensor.detach()
                     prediction = prediction.detach()
                     metric_result: Dict[str, Any] = metrics(prediction, image_tensor)
 
+                    img_metric_result[str(original_image_path)] = {}
+
                     for key, value in metric_result.items():
                         avg_metrics[key] += value.item()
+                        img_metric_result[str(original_image_path)][key] = value.item()
 
             elif model_type == "ensemble_averaging":
                 with ProcessPoolExecutor() as executor:
@@ -759,7 +780,9 @@ def measure_metrics_for_denoised_images() -> None:
                             transformations,
                             metrics,
                         )
-                        for original_images_path, noise_image_path in zip(original_images_paths, noised_image_paths)
+                        for original_images_path, noise_image_path in zip(
+                            original_images_paths, noised_image_paths
+                        )
                     ]
 
                     for future in track(
@@ -767,9 +790,14 @@ def measure_metrics_for_denoised_images() -> None:
                         f"Making predictions and calculating metrics...\nModel: {model_type}\nNoises: {noise_type_arr}",
                         total=len(futures),
                     ):
-                        result = future.result()
-                        for key, value in result.items():
+                        image_path, metric_result = future.result()
+                        img_metric_result[str(image_path)] = {}
+                        for key, value in metric_result.items():
                             avg_metrics[key] += value.item()
+                            img_metric_result[str(image_path)][key] = value.item()
+
+            with open(f"jsons_denoising/result_{model_type}_{noise_type_arr}.json", "w") as f:
+                json.dump(img_metric_result, f)
 
             for key in avg_metrics:
                 avg_metrics[key] /= len(noised_image_paths)
@@ -904,6 +932,175 @@ def plot_mlflow_runs_metrics() -> None:
         )
 
 
+def measure_metrics_for_unet_models() -> None:
+    # Parameters:
+    # ---------------
+    original_images_path = Path("data/main_dataset/original_images/")
+    target_dir = Path("data/TeethSegmentation/chosen_anns/")
+    denoised_images_dir = Path("data/main_dataset/dncnn_denoised_images_teeth/")
+    noise_json = Path("data/main_dataset/teeth_dataset_info.json")
+    noise_types = [
+        ["poisson_noise"],
+        ["speckle_noise"],
+        ["salt_and_pepper_noise"],
+        ["poisson_noise", "speckle_noise"],
+        ["poisson_noise", "salt_and_pepper_noise"],
+        ["speckle_noise", "salt_and_pepper_noise"],
+        ["poisson_noise", "speckle_noise", "salt_and_pepper_noise"],
+    ]
+    model_info = {
+        "Ensemble": Path(
+            "models/UNet/MultiClassUNet/Ensemble/multiclass_unet_teeth_ensemble_dataset/checkpoints/epoch=59-step=1380.ckpt"
+        ),
+        "DNCNN": Path(
+            "models/UNet/MultiClassUNet/DnCNN/multiclass_unet_teeth_dncnn_dataset/checkpoints/epoch=59-step=1380.ckpt"
+        ),
+        "DAE": Path(
+            "models/UNet/MultiClassUNet/DAE/multiclass_unet_teeth_dae_dataset/checkpoints/epoch=59-step=1380.ckpt"
+        ),
+    }
+    transformations = vision_trans.Compose(
+        [
+            vision_trans.Resize((256, 256), antialias=True),
+            vision_trans.ToTensor(),
+        ]
+    )
+    metrics = MetricCollection(
+        {
+            "JaccardIndex": JaccardIndex(task="multiclass", num_classes=33),
+        }
+    )
+
+    # ---------------
+    def get_image_paths(
+        original_images_path,
+        noised_images_path: Path,
+        json_files: List[Path],
+        noise_types: List[str],
+    ) -> Tuple[List[Path], List[Path]]:
+        import ast
+
+        original_images_paths = []
+        denoised_image_paths = []
+
+        json_data = []
+        for json_file in json_files:
+            with open(json_file, "r") as f:
+                json_data.append(json.load(f))
+
+        combined_json_data = {k: v for d in json_data for k, v in d.items()}
+
+        for img_path in noised_images_path.iterdir():
+            img_name = img_path.stem
+            if img_name in combined_json_data:
+                noise_info: str = combined_json_data[img_name]
+                noise_type_str = noise_info.split("|")[0].split(":")[1].strip()
+                if noise_type_str[0] == "[":
+                    noise_types_in_img = ast.literal_eval(noise_type_str)
+                else:
+                    noise_types_in_img = [noise_type_str]
+
+                if all(
+                    noise_type in noise_types_in_img for noise_type in noise_types
+                ) and len(noise_types_in_img) == len(noise_types):
+                    original_images_paths.append(
+                        original_images_path / (img_name + img_path.suffix)
+                    )
+                    denoised_image_paths.append(img_path)
+
+        return original_images_paths, denoised_image_paths
+
+
+    for model_name, model_path in model_info.items():
+        for noise_type_arr in noise_types:
+            model = MulticlassUNetModel.load_from_checkpoint(checkpoint_path=model_path)
+            model.to("cpu")
+            model.eval()
+
+            original_images_paths, denoised_image_paths = get_image_paths(
+                original_images_path, denoised_images_dir, [noise_json], noise_type_arr
+            )
+            avg_metrics: Dict[str, float] = {str(key): 0.0 for key in metrics.keys()}
+            img_metric_result: dict[str, dict[str, float]] = {}
+
+            for original_image_path, denoise_image_path in track(
+                zip(original_images_paths, denoised_image_paths),
+                f"Making predictions and calculating metrics...\nModel: {model_name}\nNoises: {noise_type_arr}\n",
+                total=len(denoised_image_paths),
+            ):
+                with Image.open(denoise_image_path) as denoised_img:
+                    denoised_img = denoised_img.convert("L")
+
+                mask = Image.fromarray(create_mask_from_annotation(target_dir / f"{original_image_path.stem}.jpg.json"))
+                mask = mask.resize((256, 256), resample=Image.NEAREST) 
+                mask = pil_to_tensor(mask)
+                mask = mask.type(torch.long)
+
+                denoised_image_tensor: torch.Tensor = transformations(denoised_img).unsqueeze(0)
+                prediction: torch.Tensor = model(denoised_image_tensor) #.clamp(0, 1)
+                prediction = prediction.detach()
+                metric_result: Dict[str, Any] = metrics(torch.argmax(prediction, dim=1), mask)
+
+                img_metric_result[str(original_image_path)] = {}
+
+                for key, value in metric_result.items():
+                    avg_metrics[key] += value.item()
+                    img_metric_result[str(original_image_path)][key] = value.item()
+
+            with open(f"jsons_segmentation/result_{model_name}_{noise_type_arr}.json", "w") as f:
+                json.dump(img_metric_result, f)
+
+            for key in avg_metrics:
+                avg_metrics[key] /= len(denoised_image_paths)
+                print(f"{key}: {avg_metrics[key]:.4f}")
+
+            print()
+
+
+
+def load_jsons_by_model(n=50):
+    from collections import defaultdict
+    metric = "JaccardIndex"
+    jsons = Path("jsons_segmentation")
+
+    model_results = defaultdict(list)
+
+    for model_name in [
+        # "ensemble_averaging",
+        # "<class 'preprocessing.neural_networks.dncnn.DnCNN'>",
+        # "<class 'preprocessing.neural_networks.dae.DenoisingAutoencoder'>",
+        "Ensemble",
+        "DNCNN",
+        "DAE"
+    ]:
+        json_files = jsons.glob(f"result_{model_name}_*.json")
+        metrics_data = {}
+
+        for file_path in json_files:
+            with open(file_path, "r") as file:
+                data = json.load(file)
+
+                # Collect the metrics for each image in the JSON
+                for image_path, metrics in data.items():
+                    metrics_data[image_path] = metrics[metric]
+
+        # Sort the images by the specified metric in ascending order
+        sorted_images = sorted(metrics_data.items(), key=lambda x: x[1])
+
+        # Take the n image paths with the lowest metrics and store them
+        for image_path, metric_value in sorted_images[:n]:
+            model_results[image_path].append(metric_value)
+
+    # Now, filter to find images that appear in at least two models
+    common_images = {
+        image: values for image, values in model_results.items() if len(values) > 1
+    }
+
+    # Print the results
+    for image_path, metric_values in common_images.items():
+        print(f"Path: {image_path}, {metric}: {metric_values}")
+
+
 if __name__ == "__main__":
     # train_unet_model()
     # test_unet_model()
@@ -917,6 +1114,8 @@ if __name__ == "__main__":
     # plot_mlflow_runs_metrics()
     # images_pixel_intensities()
 
-    measure_metrics_for_denoised_images()
+    # measure_metrics_for_denoised_images()
+    # measure_metrics_for_unet_models()
+    load_jsons_by_model()
 
     # TODO: Loss - https://github.com/francois-rozet/piqa | https://stackoverflow.com/questions/53956932/use-pytorch-ssim-loss-function-in-my-model
